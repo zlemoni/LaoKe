@@ -1,6 +1,6 @@
 # LaoKe 主题
 
-LaoKe 是一个基于 Typecho 的纯文字、单栏、极简博客主题。
+LaoKe 是一个基于 Typecho 的纯文字、单栏、极简博客主题，页面样式有参考Briefness主题。
 
 - **作者**：Zhang
 - **链接**：<https://lao.ke>
