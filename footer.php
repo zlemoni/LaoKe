@@ -9,6 +9,7 @@
             <?php if (laoke_option('beian')): ?>
                 <span class="meta-item"><?php echo htmlspecialchars(laoke_option('beian'), ENT_QUOTES, 'UTF-8'); ?></span>
             <?php endif; ?>
+            <span class="meta-item"><a href="https://github.com/zlemoni/LaoKe" target="_blank" rel="noopener noreferrer">Theme：LaoKe</span>
         </p>
     </footer>
 </div>
