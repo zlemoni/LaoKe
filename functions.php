@@ -662,9 +662,11 @@ JS;
 
 function laoke_option($name, $default = '')
 {
-    $options = Helper::options();
-    $value = isset($options->$name) ? $options->$name : null;
-    return $value !== null && $value !== '' ? $value : $default;
+    $settings = laoke_theme_settings_array();
+    if (isset($settings[$name]) && $settings[$name] !== '') {
+        return $settings[$name];
+    }
+    return $default;
 }
 
 function laoke_avatar_source()
