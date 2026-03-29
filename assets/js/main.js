@@ -203,6 +203,80 @@
         state.themeBound = true;
     }
 
+    const codeThemeMap = {
+        'default': 'prism.css',
+        'tomorrow-night': 'prism-tomorrow-night.css',
+        'okaidia': 'prism-okaidia.css',
+        'dracula': 'prism-dracula.css',
+        'solarized-light': 'prism-solarized-light.css',
+        'github': 'prism-github.css'
+    };
+
+    function getCodeThemeFromStorage() {
+        return window.localStorage.getItem('laoke-code-theme') || '';
+    }
+
+    function setCodeThemeToStorage(theme) {
+        window.localStorage.setItem('laoke-code-theme', theme);
+    }
+
+    function applyCodeTheme(themeKey) {
+        const themeFile = codeThemeMap[themeKey] || codeThemeMap['default'];
+        const existingLink = document.getElementById('laoke-code-theme');
+        if (!existingLink) {
+            return;
+        }
+        const newLink = document.createElement('link');
+        newLink.rel = 'stylesheet';
+        newLink.href = existingLink.href.replace(/\/css\/vendor\/[^/]+$/, '/css/vendor/' + themeFile);
+        newLink.id = 'laoke-code-theme';
+        newLink.addEventListener('load', function() {
+            existingLink.remove();
+        });
+        document.head.appendChild(newLink);
+    }
+
+    function initCodeThemeSwitch() {
+        const panel = document.getElementById('laoke-code-theme-panel');
+        const toggleBtn = document.getElementById('laoke-code-theme-toggle');
+        if (!panel) {
+            return;
+        }
+
+        const storedTheme = getCodeThemeFromStorage();
+        if (storedTheme && codeThemeMap[storedTheme]) {
+            applyCodeTheme(storedTheme);
+        }
+
+        const currentTheme = getCodeThemeFromStorage() || 'default';
+        panel.querySelectorAll('.laoke-code-theme-btn').forEach(function(btn) {
+            if (btn.dataset.codeTheme === currentTheme) {
+                btn.classList.add('is-active');
+            }
+            btn.addEventListener('click', function() {
+                const theme = this.dataset.codeTheme;
+                setCodeThemeToStorage(theme);
+                applyCodeTheme(theme);
+                panel.querySelectorAll('.laoke-code-theme-btn').forEach(function(b) {
+                    b.classList.remove('is-active');
+                });
+                this.classList.add('is-active');
+            });
+        });
+
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', function() {
+                panel.classList.toggle('is-visible');
+            });
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!panel.contains(e.target) && (!toggleBtn || !toggleBtn.contains(e.target))) {
+                panel.classList.remove('is-visible');
+            }
+        });
+    }
+
     function initHeaderTools() {
         const nav = document.getElementById("nav");
         const navToggle = document.getElementById("nav-toggle");
@@ -1729,6 +1803,7 @@
         }
 
         initFonts();
+        initCodeThemeSwitch();
         initHeaderTools();
         initThemeToggle();
         initSmoothAnchors(root);
@@ -1764,6 +1839,7 @@
 
     document.addEventListener("DOMContentLoaded", function () {
         hydrateConfig(document);
+        initCodeThemeSwitch();
         initPage(document);
     });
 })();

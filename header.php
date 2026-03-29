@@ -11,11 +11,16 @@
     <title><?php echo htmlspecialchars(laoke_page_title($this), ENT_QUOTES, 'UTF-8'); ?></title>
     <?php laoke_render_frontend_head_assets(); ?>
     <link rel="preload" href="<?php echo laoke_theme_url('assets/css/base.css'); ?>" as="style">
+    <link rel="preload" href="<?php echo laoke_theme_url('assets/css/layout.css'); ?>" as="style">
+    <link rel="preload" href="<?php echo laoke_theme_url('assets/css/components.css'); ?>" as="style">
+    <link rel="preload" href="<?php echo laoke_theme_url('assets/css/pages.css'); ?>" as="style">
+    <link rel="preload" href="<?php echo laoke_theme_url('assets/js/main.js'); ?>" as="script" crossorigin="anonymous">
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" crossorigin="anonymous">
     <link rel="stylesheet" href="<?php echo laoke_theme_url('assets/css/base.css'); ?>">
     <link rel="stylesheet" href="<?php echo laoke_theme_url('assets/css/layout.css'); ?>">
     <link rel="stylesheet" href="<?php echo laoke_theme_url('assets/css/components.css'); ?>">
     <link rel="stylesheet" href="<?php echo laoke_theme_url('assets/css/pages.css'); ?>">
-    <link rel="stylesheet" href="<?php echo laoke_theme_url('assets/css/vendor/prism.css'); ?>">
     <link rel="stylesheet" href="<?php echo laoke_theme_url('assets/css/vendor/viewimages.css'); ?>">
     <link rel="stylesheet" href="<?php echo laoke_theme_url('assets/css/vendor/aplayer.min.css'); ?>">
     <?php $this->header(); ?>

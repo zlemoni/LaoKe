@@ -148,6 +148,28 @@ function laoke_frontend_font_config()
     ];
 }
 
+function laoke_code_theme_config()
+{
+    $themeMap = [
+        'default' => 'prism.css',
+        'tomorrow-night' => 'prism-tomorrow-night.css',
+        'okaidia' => 'prism-okaidia.css',
+        'dracula' => 'prism-dracula.css',
+        'solarized-light' => 'prism-solarized-light.css',
+        'github' => 'prism-github.css'
+    ];
+
+    $themeKey = trim((string) laoke_option('codeTheme', 'default'));
+    if (!isset($themeMap[$themeKey])) {
+        $themeKey = 'default';
+    }
+
+    return [
+        'key' => $themeKey,
+        'file' => $themeMap[$themeKey]
+    ];
+}
+
 function laoke_css_font_value($value)
 {
     return trim(preg_replace('/\s+/u', ' ', (string) $value));
@@ -177,6 +199,9 @@ function laoke_render_frontend_head_assets()
         . '--font-title:' . laoke_css_custom_property_value($font['title']) . ';'
         . '--font-ui:' . laoke_css_custom_property_value($font['ui']) . ';'
         . '}</style>' . "\n";
+
+    $codeTheme = laoke_code_theme_config();
+    echo '<link rel="stylesheet" href="' . htmlspecialchars(laoke_theme_url('assets/css/vendor/' . $codeTheme['file']), ENT_QUOTES, 'UTF-8') . '" id="laoke-code-theme">' . "\n";
 }
 
 function laoke_barrage_opacity()
@@ -457,6 +482,24 @@ function laoke_add_integrated_theme_options($form)
         _t('例如 LXGW WenKai、HarmonyOS Sans。')
     );
     $form->addInput($fontCustomFamily);
+
+    $codeThemeOptions = [
+        'default' => _t('默认深色'),
+        'tomorrow-night' => _t('Tomorrow Night'),
+        'okaidia' => _t('Okaidia'),
+        'dracula' => _t('Dracula'),
+        'solarized-light' => _t('Solarized Light'),
+        'github' => _t('GitHub Light')
+    ];
+
+    $codeTheme = new \Typecho\Widget\Helper\Form\Element\Select(
+        'codeTheme',
+        $codeThemeOptions,
+        'default',
+        _t('代码高亮主题'),
+        _t('选择代码块的语法高亮配色方案。')
+    );
+    $form->addInput($codeTheme);
     return;
 
     $adminThemeEnabled = new \Typecho\Widget\Helper\Form\Element\Radio(

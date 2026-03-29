@@ -50,6 +50,26 @@
     </svg>
     <span class="sr-only">切换主题</span>
 </button>
+<div class="laoke-code-theme-panel" id="laoke-code-theme-panel" aria-label="代码高亮主题切换">
+    <button class="laoke-code-theme-btn" type="button" data-code-theme="default" title="默认深色">
+        <span class="laoke-code-theme-preview laoke-code-theme-preview--dark"></span>
+    </button>
+    <button class="laoke-code-theme-btn" type="button" data-code-theme="tomorrow-night" title="Tomorrow Night">
+        <span class="laoke-code-theme-preview laoke-code-theme-preview--dark"></span>
+    </button>
+    <button class="laoke-code-theme-btn" type="button" data-code-theme="okaidia" title="Okaidia">
+        <span class="laoke-code-theme-preview laoke-code-theme-preview--dark"></span>
+    </button>
+    <button class="laoke-code-theme-btn" type="button" data-code-theme="dracula" title="Dracula">
+        <span class="laoke-code-theme-preview laoke-code-theme-preview--dark"></span>
+    </button>
+    <button class="laoke-code-theme-btn" type="button" data-code-theme="solarized-light" title="Solarized Light">
+        <span class="laoke-code-theme-preview laoke-code-theme-preview--light"></span>
+    </button>
+    <button class="laoke-code-theme-btn" type="button" data-code-theme="github" title="GitHub Light">
+        <span class="laoke-code-theme-preview laoke-code-theme-preview--light"></span>
+    </button>
+</div>
 <div class="laoke-barrage" id="laoke-barrage" aria-hidden="true"></div>
 <script>
 (function () {
