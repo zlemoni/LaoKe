@@ -500,6 +500,94 @@ function laoke_add_integrated_theme_options($form)
         _t('选择代码块的语法高亮配色方案。')
     );
     $form->addInput($codeTheme);
+
+    $fontEnabled = new \Typecho\Widget\Helper\Form\Element\Radio(
+        'fontEnabled',
+        $toggleOptions,
+        '1',
+        _t('前台字体系统'),
+        _t('通过主题预设或自定义样式链接切换前台字体。')
+    );
+    $form->addInput($fontEnabled);
+
+    $fontPresetOptions = [];
+    foreach (laoke_frontend_font_presets() as $key => $preset) {
+        $fontPresetOptions[$key] = $preset['label'];
+    }
+    $fontPresetOptions['custom'] = _t('自定义字体');
+
+    $fontPreset = new \Typecho\Widget\Helper\Form\Element\Select(
+        'fontPreset',
+        $fontPresetOptions,
+        'default',
+        _t('字体预设'),
+        _t('选择主题内置字体组合，或切换到自定义字体。')
+    );
+    $form->addInput($fontPreset);
+
+    $fontCustomUrl = new \Typecho\Widget\Helper\Form\Element\Text(
+        'fontCustomUrl',
+        null,
+        null,
+        _t('自定义字体样式链接'),
+        _t('例如字体服务返回的 CSS 链接，仅在"自定义字体"模式下生效。')
+    );
+    $form->addInput($fontCustomUrl);
+
+    $fontCustomFamily = new \Typecho\Widget\Helper\Form\Element\Text(
+        'fontCustomFamily',
+        null,
+        null,
+        _t('自定义字体名称'),
+        _t('例如 LXGW WenKai、HarmonyOS Sans。')
+    );
+    $form->addInput($fontCustomFamily);
+
+    $barrageEnabled = new \Typecho\Widget\Helper\Form\Element\Radio(
+        'barrageEnabled',
+        $toggleOptions,
+        '1',
+        _t('评论弹幕'),
+        _t('将评论弹幕功能内聚到主题内部。')
+    );
+    $form->addInput($barrageEnabled);
+
+    $barrageHomeEnabled = new \Typecho\Widget\Helper\Form\Element\Radio(
+        'barrageHomeEnabled',
+        $toggleOptions,
+        '1',
+        _t('首页弹幕'),
+        _t('首页展示全站随机评论弹幕，并自动排除时光机评论。')
+    );
+    $form->addInput($barrageHomeEnabled);
+
+    $barragePostEnabled = new \Typecho\Widget\Helper\Form\Element\Radio(
+        'barragePostEnabled',
+        $toggleOptions,
+        '1',
+        _t('文章页弹幕'),
+        _t('文章页只展示当前文章的已审核评论弹幕。')
+    );
+    $form->addInput($barragePostEnabled);
+
+    $barrageMobileEnabled = new \Typecho\Widget\Helper\Form\Element\Radio(
+        'barrageMobileEnabled',
+        ['0' => _t('默认关闭'), '1' => _t('开启')],
+        '0',
+        _t('移动端弹幕'),
+        _t('默认仅桌面端显示弹幕，如有需要可单独开启移动端。')
+    );
+    $form->addInput($barrageMobileEnabled);
+
+    $barrageOpacity = new \Typecho\Widget\Helper\Form\Element\Text(
+        'barrageOpacity',
+        null,
+        '82',
+        _t('弹幕透明度'),
+        _t('支持填写 0.35-0.96 或 35-96，只影响弹幕胶囊底色，不影响文字和头像。')
+    );
+    $form->addInput($barrageOpacity);
+
     return;
 
     $adminThemeEnabled = new \Typecho\Widget\Helper\Form\Element\Radio(

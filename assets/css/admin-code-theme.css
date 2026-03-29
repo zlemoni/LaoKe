@@ -1,0 +1,48 @@
+.laoke-admin-code-theme-selector {
+    margin: 15px 0;
+    padding: 15px;
+    background: var(--bg, #f8f9fa);
+    border-radius: 8px;
+    border: 1px solid var(--border, #e1e4e8);
+}
+
+.laoke-admin-code-theme-selector p {
+    margin: 0 0 10px 0;
+    font-weight: 600;
+    color: var(--text, #333);
+    font-size: 14px;
+}
+
+.laoke-admin-code-theme-btn {
+    padding: 8px 14px;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+    color: #fff;
+    min-width: 100px;
+    text-align: center;
+}
+
+.laoke-admin-code-theme-btn:hover {
+    opacity: 0.85;
+    transform: translateY(-1px);
+}
+
+.laoke-admin-code-theme-btn.is-active {
+    border-color: #0969da;
+    box-shadow: 0 2px 8px rgba(9, 105, 218, 0.3);
+}
+
+.laoke-admin-code-theme-btn.is-loading {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+#wmd-preview {
+    transition: background-color 0.3s ease, color 0.3s ease;
+    padding: 20px;
+    border-radius: 4px;
+    margin-top: 10px;
+}

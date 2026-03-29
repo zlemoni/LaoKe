@@ -577,6 +577,28 @@ function themeInit($archive)
 \Typecho\Plugin::factory('Widget_Feedback')->comment_1000 = 'laoke_filter_comment_submission';
 \Typecho\Plugin::factory('Widget_Feedback')->finishComment = 'laoke_after_comment_submission';
 \Typecho\Plugin::factory('admin/editor-js.php')->markdownEditor = ['LaoKe_Admin_Editor', 'mountShortcodeToolbar'];
+\Typecho\Plugin::factory('admin/common.php')->footer = ['LaoKe_Admin_Hooks', 'injectAdminFooter'];
+
+class LaoKe_Admin_Hooks
+{
+    public static function injectAdminFooter()
+    {
+        $codeTheme = laoke_option('codeTheme', 'default');
+        $themeUrl = laoke_theme_url('assets/css/vendor/prism-' . $codeTheme . '.css');
+        if ($codeTheme === 'default') {
+            $themeUrl = laoke_theme_url('assets/css/vendor/prism.css');
+        }
+        $themeUrl = htmlspecialchars($themeUrl, ENT_QUOTES, 'UTF-8');
+        $cssUrl = htmlspecialchars(laoke_theme_url('assets/css/admin-code-theme.css'), ENT_QUOTES, 'UTF-8');
+        $jsUrl = htmlspecialchars(laoke_theme_url('assets/js/admin-code-theme.js'), ENT_QUOTES, 'UTF-8');
+
+        echo <<<HTML
+<link rel="stylesheet" id="laoke-admin-prism-theme" href="{$themeUrl}">
+<link rel="stylesheet" href="{$cssUrl}">
+<script src="{$jsUrl}"></script>
+HTML;
+    }
+}
 
 class LaoKe_Admin_Editor
 {
