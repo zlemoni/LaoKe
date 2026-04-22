@@ -1427,55 +1427,34 @@ function laoke_get_views_map(array $cids)
 
 function laoke_adjacent_post($archive, $direction = 'prev')
 {
-    if (!is_object($archive) || !method_exists($archive, 'select')) {
-        return null;
-    }
-
-    $cid = isset($archive->cid) ? (int) $archive->cid : 0;
-    if ($cid <= 0) {
-        return null;
-    }
-
     $direction = strtolower(trim((string) $direction)) === 'next' ? 'next' : 'prev';
-    static $cache = [];
-    $cacheKey = $cid . ':' . $direction;
-
-    if (array_key_exists($cacheKey, $cache)) {
-        return $cache[$cacheKey];
-    }
-
     $options = Helper::options();
     $upperTime = is_object($options) && isset($options->time) ? (int) $options->time : time();
-
-    $query = $archive->select()
+    $t = \Typecho\Widget::widget('Widget_Archive@next');//@的作用我之前也有讲过，就是用来区分的，这里的$t就是定义的$this
+    $db = Typecho_Db::get();
+    $sql = $db->select()->from('table.contents');
+    if ($direction === 'next') {
+        $sql->where('table.contents.created > ? AND table.contents.created < ?',$archive->created,$upperTime)
         ->where('table.contents.status = ?', 'publish')
         ->where('table.contents.type = ?', (string) $archive->type)
         ->where("table.contents.password IS NULL OR table.contents.password = ''")
-        ->limit(1);
-
-    if ($direction === 'next') {
-        $query->where(
-            'table.contents.created > ? AND table.contents.created < ?',
-            $archive->created,
-            $upperTime
-        )->order('table.contents.created', Typecho_Db::SORT_ASC);
-    } else {
-        $query->where('table.contents.created < ?', $archive->created)
-            ->order('table.contents.created', Typecho_Db::SORT_DESC);
+        ->order('table.contents.created', Typecho_Db::SORT_DESC)
+        ->limit(1);//sql查询下一篇文章
+    }else{
+        $sql->where('table.contents.created < ?', $archive->created)
+        ->where('table.contents.status = ?', 'publish')
+        ->where('table.contents.type = ?', (string) $archive->type)
+        ->where("table.contents.password IS NULL OR table.contents.password = ''")
+        ->order('table.contents.created', Typecho_Db::SORT_DESC)
+        ->limit(1);//sql查询上一篇文章
     }
-
-    $content = \Widget\Contents\From::allocWithAlias('laoke-adjacent-' . $cacheKey, ['query' => $query]);
-    if (!$content->have()) {
-        $cache[$cacheKey] = null;
-        return null;
-    }
-
-    $cache[$cacheKey] = [
-        'title' => trim((string) $content->title),
-        'permalink' => trim((string) $content->permalink)
-    ];
-
-    return $cache[$cacheKey];
+   if(empty($db->fetchRow($sql))){return false;}else{
+       $db->fetchRow($sql, array($t, 'push'));
+       return [
+        'title' => trim((string) $t->title),
+        'permalink' => trim((string) $t->permalink)
+        ];
+   }
 }
 
 function laoke_total_posts()
