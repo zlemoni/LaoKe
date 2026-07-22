@@ -11,6 +11,13 @@
         albumUnlockPending: false,
         albumModalBound: false,
         shortcodeMp3Observer: null,
+        pageObservers: [],
+        tocObserver: null,
+        audioPlayers: new Set(),
+        commentController: null,
+        codeThemeRequestId: 0,
+        smoothScrollFrame: null,
+        codeThemeDocumentBound: false,
         barrageTimer: null,
         barrageIndex: 0,
         barrageVisibilityBound: false
@@ -23,6 +30,7 @@
             ajax: false,
             progress: false,
             lazyload: false,
+            codeTheme: "default",
             metingEndpoint: "https://api.injahow.cn/meting/",
             barrage: {
                 enabled: false,
@@ -148,7 +156,10 @@
     }
 
     function getPreferredTheme() {
-        const stored = window.localStorage.getItem("laoke-theme");
+        let stored = "";
+        try {
+            stored = window.localStorage.getItem("laoke-theme") || "";
+        } catch (error) {}
         if (stored === "light" || stored === "dark") {
             return stored;
         }
@@ -178,7 +189,9 @@
             button.addEventListener("click", function () {
                 const current = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
                 const next = current === "dark" ? "light" : "dark";
-                window.localStorage.setItem("laoke-theme", next);
+                try {
+                    window.localStorage.setItem("laoke-theme", next);
+                } catch (error) {}
                 applyTheme(next);
             });
         });
@@ -189,7 +202,11 @@
 
         const media = window.matchMedia("(prefers-color-scheme: dark)");
         const handleChange = function () {
-            if (!window.localStorage.getItem("laoke-theme")) {
+            let stored = "";
+            try {
+                stored = window.localStorage.getItem("laoke-theme") || "";
+            } catch (error) {}
+            if (!stored) {
                 applyTheme(getPreferredTheme());
             }
         };
@@ -213,11 +230,17 @@
     };
 
     function getCodeThemeFromStorage() {
-        return window.localStorage.getItem('laoke-code-theme') || '';
+        try {
+            return window.localStorage.getItem('laoke-code-theme') || '';
+        } catch (error) {
+            return '';
+        }
     }
 
     function setCodeThemeToStorage(theme) {
-        window.localStorage.setItem('laoke-code-theme', theme);
+        try {
+            window.localStorage.setItem('laoke-code-theme', theme);
+        } catch (error) {}
     }
 
     function applyCodeTheme(themeKey) {
@@ -226,12 +249,30 @@
         if (!existingLink) {
             return;
         }
+        const nextHref = existingLink.href.replace(/\/css\/vendor\/[^/]+$/, '/css/vendor/' + themeFile);
+        const pendingLink = document.querySelector('link[data-laoke-code-theme-pending="true"]');
+        if (existingLink.href === nextHref && !pendingLink) {
+            return;
+        }
+        if (pendingLink) {
+            pendingLink.remove();
+        }
+        const requestId = ++state.codeThemeRequestId;
         const newLink = document.createElement('link');
         newLink.rel = 'stylesheet';
-        newLink.href = existingLink.href.replace(/\/css\/vendor\/[^/]+$/, '/css/vendor/' + themeFile);
-        newLink.id = 'laoke-code-theme';
+        newLink.href = nextHref;
+        newLink.setAttribute('data-laoke-code-theme-pending', 'true');
         newLink.addEventListener('load', function() {
+            if (requestId !== state.codeThemeRequestId) {
+                newLink.remove();
+                return;
+            }
             existingLink.remove();
+            newLink.id = 'laoke-code-theme';
+            newLink.removeAttribute('data-laoke-code-theme-pending');
+        });
+        newLink.addEventListener('error', function() {
+            newLink.remove();
         });
         document.head.appendChild(newLink);
     }
@@ -248,31 +289,53 @@
             applyCodeTheme(storedTheme);
         }
 
-        const currentTheme = getCodeThemeFromStorage() || 'default';
+        const configuredTheme = window.LaoKeConfig && codeThemeMap[window.LaoKeConfig.codeTheme]
+            ? window.LaoKeConfig.codeTheme
+            : 'default';
+        const currentTheme = getCodeThemeFromStorage() || configuredTheme;
         panel.querySelectorAll('.laoke-code-theme-btn').forEach(function(btn) {
-            if (btn.dataset.codeTheme === currentTheme) {
-                btn.classList.add('is-active');
+            const isActive = btn.dataset.codeTheme === currentTheme;
+            btn.classList.toggle('is-active', isActive);
+            btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+            if (btn.dataset.codeThemeBound === 'true') {
+                return;
             }
+            btn.dataset.codeThemeBound = 'true';
             btn.addEventListener('click', function() {
                 const theme = this.dataset.codeTheme;
                 setCodeThemeToStorage(theme);
                 applyCodeTheme(theme);
                 panel.querySelectorAll('.laoke-code-theme-btn').forEach(function(b) {
                     b.classList.remove('is-active');
+                    b.setAttribute('aria-pressed', 'false');
                 });
                 this.classList.add('is-active');
+                this.setAttribute('aria-pressed', 'true');
             });
         });
 
-        if (toggleBtn) {
+        if (toggleBtn && toggleBtn.dataset.codeThemeBound !== 'true') {
+            toggleBtn.dataset.codeThemeBound = 'true';
             toggleBtn.addEventListener('click', function() {
-                panel.classList.toggle('is-visible');
+                const visible = panel.classList.toggle('is-visible');
+                panel.setAttribute('aria-hidden', visible ? 'false' : 'true');
+                toggleBtn.setAttribute('aria-expanded', visible ? 'true' : 'false');
             });
         }
 
+        if (state.codeThemeDocumentBound) {
+            return;
+        }
+        state.codeThemeDocumentBound = true;
         document.addEventListener('click', function(e) {
-            if (!panel.contains(e.target) && (!toggleBtn || !toggleBtn.contains(e.target))) {
-                panel.classList.remove('is-visible');
+            const currentPanel = document.getElementById('laoke-code-theme-panel');
+            const currentToggle = document.getElementById('laoke-code-theme-toggle');
+            if (currentPanel && !currentPanel.contains(e.target) && (!currentToggle || !currentToggle.contains(e.target))) {
+                currentPanel.classList.remove('is-visible');
+                currentPanel.setAttribute('aria-hidden', 'true');
+                if (currentToggle) {
+                    currentToggle.setAttribute('aria-expanded', 'false');
+                }
             }
         });
     }
@@ -309,6 +372,13 @@
     }
 
     function smoothScrollTo(targetY) {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            window.scrollTo(0, targetY);
+            return;
+        }
+        if (state.smoothScrollFrame) {
+            window.cancelAnimationFrame(state.smoothScrollFrame);
+        }
         const startY = window.scrollY;
         const distance = targetY - startY;
         const duration = 300;
@@ -319,11 +389,13 @@
             const eased = 1 - Math.pow(1 - progress, 3);
             window.scrollTo(0, startY + distance * eased);
             if (progress < 1) {
-                window.requestAnimationFrame(frame);
+                state.smoothScrollFrame = window.requestAnimationFrame(frame);
+            } else {
+                state.smoothScrollFrame = null;
             }
         }
 
-        window.requestAnimationFrame(frame);
+        state.smoothScrollFrame = window.requestAnimationFrame(frame);
     }
 
     function initSmoothAnchors(root) {
@@ -339,7 +411,11 @@
 
             link.dataset.smoothBound = "true";
             link.addEventListener("click", function (event) {
-                const target = document.querySelector(url.hash);
+                let targetId = url.hash.slice(1);
+                try {
+                    targetId = decodeURIComponent(targetId);
+                } catch (error) {}
+                const target = document.getElementById(targetId);
                 if (!target) {
                     return;
                 }
@@ -398,6 +474,7 @@
                 observer.unobserve(entry.target);
             });
         }, { rootMargin: "150px 0px" });
+        state.pageObservers.push(observer);
 
         images.forEach(function (image) {
             observer.observe(image);
@@ -427,6 +504,12 @@
 
         const target = Number(element.dataset.countup || 0);
         const suffix = element.dataset.suffix || "";
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            element.dataset.countAnimated = "true";
+            element.textContent = formatCountValue(target, suffix);
+            element.classList.add("is-counted");
+            return;
+        }
         const duration = 900;
         const start = performance.now();
 
@@ -469,6 +552,7 @@
                 observer.unobserve(entry.target);
             });
         }, { threshold: 0.35 });
+        state.pageObservers.push(observer);
 
         numbers.forEach(function (item) {
             if (item.dataset.countAnimated === "true") {
@@ -512,6 +596,9 @@
     function getBarrageConfig() {
         const config = window.LaoKeConfig && window.LaoKeConfig.barrage ? window.LaoKeConfig.barrage : null;
         if (!config || !config.enabled || !Array.isArray(config.items) || !config.items.length) {
+            return null;
+        }
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
             return null;
         }
 
@@ -645,12 +732,20 @@
 
         pushBarrage(config);
         stopBarrageLoop();
+        const configuredInterval = Number(config.interval);
+        const interval = Number.isFinite(configuredInterval)
+            ? Math.min(60000, Math.max(1600, configuredInterval))
+            : 2400;
         state.barrageTimer = window.setInterval(function () {
             pushBarrage(config);
-        }, Math.max(1600, Number(config.interval || 2400)));
+        }, interval);
     }
 
     function initToc() {
+        if (state.tocObserver) {
+            state.tocObserver.disconnect();
+            state.tocObserver = null;
+        }
         const toc = document.getElementById("post-toc");
         const content = document.querySelector(".post-content");
         if (!toc || !content) {
@@ -674,7 +769,13 @@
         const list = document.createElement("ol");
         headings.forEach(function (heading, index) {
             if (!heading.id) {
-                heading.id = "heading-" + (index + 1);
+                let candidate = "heading-" + (index + 1);
+                let suffix = 2;
+                while (document.getElementById(candidate)) {
+                    candidate = "heading-" + (index + 1) + "-" + suffix;
+                    suffix += 1;
+                }
+                heading.id = candidate;
             }
             const item = document.createElement("li");
             const link = document.createElement("a");
@@ -690,6 +791,9 @@
         initSmoothAnchors(toc);
 
         const links = Array.from(toc.querySelectorAll("a"));
+        if (!("IntersectionObserver" in window)) {
+            return;
+        }
         const observer = new IntersectionObserver(function (entries) {
             entries.forEach(function (entry) {
                 if (!entry.isIntersecting) {
@@ -700,6 +804,7 @@
                 });
             });
         }, { rootMargin: "-20% 0px -65% 0px", threshold: 0.1 });
+        state.tocObserver = observer;
 
         headings.forEach(function (heading) {
             observer.observe(heading);
@@ -1026,6 +1131,7 @@
                 const liked = button.getAttribute("aria-pressed") === "true";
                 const payload = new URLSearchParams();
                 payload.set("laoke_action", "moment_like");
+                payload.set("laoke_token", String(window.LaoKeConfig.actionToken || ""));
                 payload.set("coid", coid);
                 payload.set("toggle", liked ? "unlike" : "like");
 
@@ -1113,7 +1219,19 @@
         }
     }
 
-    function openAlbumDetail(page, key, html) {
+    function destroyAudioPlayersWithin(root) {
+        state.audioPlayers.forEach(function (record) {
+            if (!record || !record.container || !root.contains(record.container)) {
+                return;
+            }
+            if (record.player && typeof record.player.destroy === "function") {
+                record.player.destroy();
+            }
+            state.audioPlayers.delete(record);
+        });
+    }
+
+    function openAlbumDetail(page, key, html, trigger) {
         const shell = page.querySelector("[data-album-shell]");
         const grid = page.querySelector("[data-album-grid]");
         const detail = page.querySelector("[data-album-detail]");
@@ -1133,7 +1251,9 @@
             return;
         }
 
+        destroyAudioPlayersWithin(detailBody);
         detailBody.innerHTML = templateHtml;
+        page._laokeAlbumReturnFocus = trigger || document.activeElement;
         page.setAttribute("data-active-album-key", key);
         grid.hidden = true;
         detail.hidden = false;
@@ -1145,6 +1265,11 @@
         }
 
         smoothScrollTo(page.getBoundingClientRect().top + window.scrollY - 24);
+        const focusTarget = detail.querySelector("[data-album-back]") || detail.querySelector("h2");
+        if (focusTarget) {
+            focusTarget.setAttribute("tabindex", "-1");
+            focusTarget.focus({ preventScroll: true });
+        }
     }
 
     function closeAlbumDetail(page) {
@@ -1158,12 +1283,17 @@
         }
 
         page.removeAttribute("data-active-album-key");
+        destroyAudioPlayersWithin(detailBody);
         detail.hidden = true;
         grid.hidden = false;
         detailBody.innerHTML = "";
         shell.classList.remove("is-detail");
         shell.classList.add("is-list");
         smoothScrollTo(page.getBoundingClientRect().top + window.scrollY - 24);
+        if (page._laokeAlbumReturnFocus && page._laokeAlbumReturnFocus.isConnected) {
+            page._laokeAlbumReturnFocus.focus({ preventScroll: true });
+        }
+        page._laokeAlbumReturnFocus = null;
     }
 
     function closeAlbumUnlockModal(page) {
@@ -1187,6 +1317,11 @@
 
         if (title) {
             title.textContent = "输入密码";
+        }
+        const returnFocus = modal._laokeReturnFocus;
+        modal._laokeReturnFocus = null;
+        if (returnFocus && returnFocus.isConnected && typeof returnFocus.focus === "function") {
+            returnFocus.focus();
         }
     }
 
@@ -1213,6 +1348,7 @@
 
         modal.classList.add("is-open");
         modal.setAttribute("aria-hidden", "false");
+        modal._laokeReturnFocus = document.activeElement;
         window.setTimeout(function () {
             input.focus();
         }, 30);
@@ -1226,12 +1362,27 @@
 
         if (!state.albumModalBound) {
             document.addEventListener("keydown", function (event) {
-                if (event.key !== "Escape") {
-                    return;
-                }
-
                 const openModal = document.querySelector("[data-album-unlock-modal].is-open");
                 if (!openModal) {
+                    return;
+                }
+                if (event.key === "Tab") {
+                    const focusable = Array.from(openModal.querySelectorAll('button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'));
+                    if (!focusable.length) {
+                        return;
+                    }
+                    const first = focusable[0];
+                    const last = focusable[focusable.length - 1];
+                    if (event.shiftKey && document.activeElement === first) {
+                        event.preventDefault();
+                        last.focus();
+                    } else if (!event.shiftKey && document.activeElement === last) {
+                        event.preventDefault();
+                        first.focus();
+                    }
+                    return;
+                }
+                if (event.key !== "Escape") {
                     return;
                 }
 
@@ -1286,7 +1437,7 @@
                 return;
             }
 
-            openAlbumDetail(page, key);
+            openAlbumDetail(page, key, "", card);
         });
 
         const form = page.querySelector("[data-album-unlock-form]");
@@ -1321,6 +1472,7 @@
 
             const payload = new URLSearchParams();
             payload.set("laoke_action", "unlock_album");
+            payload.set("laoke_token", String(window.LaoKeConfig.actionToken || ""));
             payload.set("cid", cid);
             payload.set("album_key", albumKey);
             payload.set("password", password);
@@ -1352,7 +1504,7 @@
                 ensureAlbumTemplate(page, result.albumKey || albumKey, result.html);
                 setAlbumCardUnlocked(page, result.albumKey || albumKey);
                 closeAlbumUnlockModal(page);
-                openAlbumDetail(page, result.albumKey || albumKey, result.html);
+                openAlbumDetail(page, result.albumKey || albumKey, result.html, page.querySelector('[data-album-card][data-album-key="' + (result.albumKey || albumKey) + '"]'));
             } catch (error) {
                 if (feedback) {
                     feedback.textContent = error && error.message ? error.message : "解锁失败，请稍后重试。";
@@ -1402,6 +1554,7 @@
 
                 const payload = new URLSearchParams();
                 payload.set("laoke_action", "unlock_album");
+                payload.set("laoke_token", String(window.LaoKeConfig.actionToken || ""));
                 payload.set("cid", cid);
                 payload.set("album_key", albumKey);
                 payload.set("password", password);
@@ -1563,7 +1716,17 @@
             return;
         }
 
-        fetch(buildMetingUrl(window.LaoKeConfig && window.LaoKeConfig.metingEndpoint, songId), {
+        let metingUrl = "";
+        try {
+            metingUrl = buildMetingUrl(window.LaoKeConfig && window.LaoKeConfig.metingEndpoint, songId);
+        } catch (error) {
+            if (status) {
+                status.textContent = "音频接口地址无效。";
+            }
+            return;
+        }
+
+        fetch(metingUrl, {
             method: "GET",
             credentials: "omit",
             cache: "no-store"
@@ -1578,15 +1741,23 @@
                 throw new Error("没有获取到音频信息。");
             }
 
-            container.innerHTML = "";
-            new window.APlayer({
-                container: container,
-                lrcType: 3,
-                audio: audio
-            });
+            if (!container.isConnected) {
+                return;
+            }
+            try {
+                const player = new window.APlayer({
+                    container: container,
+                    lrcType: 3,
+                    audio: audio
+                });
+                state.audioPlayers.add({ player: player, container: container });
+            } catch (error) {
+                container.innerHTML = '<p class="shortcode-mp3__status">播放器初始化失败。</p>';
+            }
         }).catch(function (error) {
-            if (status) {
-                status.textContent = error && error.message ? error.message : "音频加载失败，请稍后重试。";
+            if (container.isConnected) {
+                container.innerHTML = '<p class="shortcode-mp3__status"></p>';
+                container.querySelector(".shortcode-mp3__status").textContent = error && error.message ? error.message : "音频加载失败，请稍后重试。";
             }
         });
     }
@@ -1676,7 +1847,9 @@
             if (feedback) {
                 feedback.textContent = mode === "moments" ? "至少写点什么。" : "评论内容至少需要 3 个字符。";
             }
-            text.focus();
+            if (text) {
+                text.focus();
+            }
             return false;
         }
 
@@ -1722,12 +1895,20 @@
 
         form.dataset.ajaxBound = "true";
         form.addEventListener("submit", async function (event) {
+            if (form.dataset.pending === "true") {
+                event.preventDefault();
+                return;
+            }
             if (!validateCommentForm(form)) {
                 event.preventDefault();
                 return;
             }
 
             event.preventDefault();
+            form.dataset.pending = "true";
+            const controller = new AbortController();
+            state.commentController = controller;
+            const submittedForm = form;
             const feedback = form.querySelector("#comment-feedback");
             const submit = form.querySelector('button[type="submit"]');
             if (submit) {
@@ -1742,28 +1923,36 @@
                     method: "POST",
                     body: new FormData(form),
                     headers: { "X-Requested-With": "XMLHttpRequest" },
-                    credentials: "same-origin"
+                    credentials: "same-origin",
+                    signal: controller.signal
                 });
                 const html = await response.text();
                 const doc = new DOMParser().parseFromString(html, "text/html");
                 const newComments = doc.querySelector("#comments");
-                const currentComments = document.querySelector("#comments");
+                const currentComments = submittedForm.closest("#comments");
 
-                if (!response.ok || !newComments || !currentComments) {
-                    window.location.href = form.action;
-                    return;
+                if (!response.ok || !newComments || !currentComments || !submittedForm.isConnected) {
+                    const responseMessage = doc.querySelector(".message, .error, .typecho-option-submit") || doc.body;
+                    throw new Error(responseMessage && responseMessage.textContent.trim()
+                        ? responseMessage.textContent.trim().slice(0, 240)
+                        : "评论提交失败，请检查输入内容。");
                 }
 
                 currentComments.replaceWith(newComments);
                 if (window.LaoKe) {
+                    window.LaoKe.runEmbeddedScripts(newComments);
                     window.LaoKe.initPage(document);
                 }
                 smoothScrollTo(document.querySelector("#comments").getBoundingClientRect().top + window.scrollY - 24);
             } catch (error) {
-                if (feedback) {
-                    feedback.textContent = "提交失败，请稍后重试。";
+                if (feedback && error.name !== "AbortError") {
+                    feedback.textContent = error && error.message ? error.message : "提交失败，请稍后重试。";
                 }
             } finally {
+                form.dataset.pending = "false";
+                if (state.commentController === controller) {
+                    state.commentController = null;
+                }
                 if (submit) {
                     submit.disabled = false;
                 }
@@ -1795,6 +1984,52 @@
 
     function beforePageSwap() {
         destroyBarrage(false);
+        if (state.smoothScrollFrame) {
+            window.cancelAnimationFrame(state.smoothScrollFrame);
+            state.smoothScrollFrame = null;
+        }
+        state.pageObservers.forEach(function (observer) {
+            observer.disconnect();
+        });
+        state.pageObservers = [];
+        if (state.tocObserver) {
+            state.tocObserver.disconnect();
+            state.tocObserver = null;
+        }
+        if (state.shortcodeMp3Observer) {
+            state.shortcodeMp3Observer.disconnect();
+            state.shortcodeMp3Observer = null;
+        }
+        if (state.commentController) {
+            state.commentController.abort();
+            state.commentController = null;
+        }
+        state.audioPlayers.forEach(function (record) {
+            if (record && record.player && typeof record.player.destroy === "function") {
+                record.player.destroy();
+            }
+        });
+        state.audioPlayers.clear();
+        if (window.ViewImages && typeof window.ViewImages.close === "function") {
+            window.ViewImages.close();
+            window.ViewImages.list = [];
+        }
+    }
+
+    function runEmbeddedScripts(root) {
+        if (!root || typeof root.querySelectorAll !== "function") {
+            return;
+        }
+        root.querySelectorAll('[data-laoke-rehydrate-scripts] script').forEach(function (script) {
+            if (script.dataset.laokeExecuted === "true" || script.src || (script.type && script.type !== "text/javascript")) {
+                return;
+            }
+            const executable = document.createElement("script");
+            executable.textContent = script.textContent || "";
+            script.dataset.laokeExecuted = "true";
+            document.head.appendChild(executable);
+            executable.remove();
+        });
     }
 
     function initPage(root) {
@@ -1833,13 +2068,13 @@
         destroyBarrage: destroyBarrage,
         hydrateConfig: hydrateConfig,
         initPage: initPage,
+        runEmbeddedScripts: runEmbeddedScripts,
         smoothScrollTo: smoothScrollTo,
         showMain: showMain
     };
 
     document.addEventListener("DOMContentLoaded", function () {
         hydrateConfig(document);
-        initCodeThemeSwitch();
         initPage(document);
     });
 })();

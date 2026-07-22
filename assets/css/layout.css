@@ -3,6 +3,9 @@
     max-width: 800px;
     width: 96%;
     background: var(--container-bg);
+    border: 1px solid var(--line-soft);
+    border-radius: 2px;
+    box-shadow: var(--shadow);
 }
 
 .skip-link {
@@ -84,6 +87,7 @@
     padding: 0;
     line-height: 30px;
     cursor: pointer;
+    transition: color 0.2s ease, opacity 0.2s ease, border-color 0.2s ease;
 }
 
 .theme-toggle {
@@ -155,6 +159,30 @@ html[data-theme="dark"] .theme-toggle__icon--moon {
     z-index: 90;
 }
 
+.code-theme-toggle {
+    position: fixed;
+    right: 24px;
+    bottom: 76px;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: var(--container-bg);
+    color: var(--title);
+    box-shadow: var(--shadow);
+    font-family: var(--font-code);
+    cursor: pointer;
+    z-index: 90;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.code-theme-toggle:hover,
+.code-theme-toggle:focus-visible {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
 .theme-toggle--floating:hover,
 .theme-toggle--floating:focus-visible {
     color: var(--title);
@@ -166,11 +194,12 @@ html[data-theme="dark"] .theme-toggle__icon--moon {
 .laoke-code-theme-panel {
     position: fixed;
     right: 24px;
-    bottom: 76px;
+    bottom: 126px;
     background: var(--container-bg);
     border-radius: 12px;
     padding: 12px;
     box-shadow: var(--shadow);
+    border: 1px solid var(--line-soft);
     display: none;
     flex-direction: column;
     gap: 8px;
@@ -225,8 +254,12 @@ html[data-theme="dark"] .theme-toggle__icon--moon {
 }
 
 .main-shell {
-    opacity: 0;
+    opacity: 1;
     transition: opacity 0.6s ease;
+}
+
+.is-loading .main-shell {
+    opacity: 0;
 }
 
 .main-shell.is-ready {
@@ -246,6 +279,7 @@ html[data-theme="dark"] .theme-toggle__icon--moon {
     background-color: var(--footer-bg);
     min-height: 80px;
     padding: 18px 20px;
+    border-top: 1px solid var(--line-soft);
 }
 
 .site-footer p {
@@ -310,7 +344,7 @@ html.is-loading .main-shell {
     opacity: 0.25;
 }
 
-@media only screen and (min-width: 720px) {
+@media only screen and (min-width: 721px) {
     .container {
         border-radius: 10px;
         box-shadow: var(--shadow);
@@ -322,6 +356,9 @@ html.is-loading .main-shell {
         margin: auto;
         width: 100%;
         padding-bottom: calc(92px + env(safe-area-inset-bottom));
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
     }
 
     .site-header {
@@ -353,6 +390,7 @@ html.is-loading .main-shell {
         margin: 0 auto;
         text-align: left;
         padding: 10px 12px;
+        background: var(--container-bg);
         background: color-mix(in srgb, var(--container-bg) 88%, transparent);
         border: 1px solid var(--line-soft);
         border-radius: 999px;
@@ -395,8 +433,8 @@ html.is-loading .main-shell {
     .site-nav a,
     .nav-link {
         margin: 0;
-        min-height: 38px;
-        line-height: 38px;
+        min-height: 44px;
+        line-height: 44px;
         color: var(--title);
         width: auto;
         padding: 0 14px;
@@ -451,5 +489,10 @@ html.is-loading .main-shell {
         display: none;
         right: 16px;
         bottom: 16px;
+    }
+
+    .code-theme-toggle,
+    .laoke-code-theme-panel {
+        display: none;
     }
 }

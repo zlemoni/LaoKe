@@ -74,6 +74,7 @@
                 return false;
             }
 
+            row.__laokeShortcodeContext = context;
             installButtons(row, context);
             context.toolbar.setAttribute("data-laoke-shortcode-mounted", "true");
             return true;
@@ -119,7 +120,7 @@
             var button = row.querySelector("#" + id);
 
             if (!button) {
-                button = createToolbarButton(definition, context);
+                button = createToolbarButton(definition, row);
             }
 
             insertAfter(row, button, reference);
@@ -145,7 +146,7 @@
         parent.appendChild(node);
     }
 
-    function createToolbarButton(definition, context) {
+    function createToolbarButton(definition, row) {
         var button = document.createElement("li");
         button.id = "wmd-laoke-" + definition.name + "-button";
         button.className = "wmd-button wmd-laoke-button";
@@ -161,7 +162,7 @@
 
         button.addEventListener("click", function (event) {
             event.preventDefault();
-            definition.action(context, button);
+            definition.action(row.__laokeShortcodeContext, button);
         });
 
         button.addEventListener("keydown", function (event) {
@@ -170,7 +171,7 @@
             }
 
             event.preventDefault();
-            definition.action(context, button);
+            definition.action(row.__laokeShortcodeContext, button);
         });
 
         return button;

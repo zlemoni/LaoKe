@@ -280,7 +280,7 @@ function laoke_render_shortcode_button($labelHtml, $url, $color)
 
 function laoke_render_shortcode_mask_text($bodyHtml)
 {
-    return '<span class="shortcode-mask-text">' . (string) $bodyHtml . '</span>';
+    return '<span class="shortcode-mask-text" tabindex="0" role="button" aria-label="聚焦或悬停显示遮罩文字">' . (string) $bodyHtml . '</span>';
 }
 
 function laoke_render_shortcode_color_text($bodyHtml, $color)
@@ -597,7 +597,7 @@ function laoke_render_shortcode_content($content, $text, $isMarkdown = true, arr
         return laoke_shortcode_fragment_token($fragments, $html, true);
     }, $working);
 
-    $working = preg_replace_callback('/\[bilibili\b([^\]]*)\]/iu', function ($matches) use (&$fragments) {
+    $working = preg_replace_callback('/\[bilibili\b([^\]]*)\](?:\s*\[\/bilibili\])?/iu', function ($matches) use (&$fragments) {
         $attributes = laoke_shortcode_attrs((string) $matches[1]);
         $bv = trim((string) ($attributes['bv'] ?? ''));
         if ($bv === '') {
@@ -607,7 +607,7 @@ function laoke_render_shortcode_content($content, $text, $isMarkdown = true, arr
         return laoke_shortcode_fragment_token($fragments, laoke_render_shortcode_bilibili($bv, (int) ($attributes['p'] ?? 1)), true);
     }, $working);
 
-    $working = preg_replace_callback('/\[video\b([^\]]*)\]/iu', function ($matches) use (&$fragments) {
+    $working = preg_replace_callback('/\[video\b([^\]]*)\](?:\s*\[\/video\])?/iu', function ($matches) use (&$fragments) {
         $attributes = laoke_shortcode_attrs((string) $matches[1]);
         $src = laoke_sanitize_shortcode_url((string) ($attributes['src'] ?? ''));
         if ($src === '') {
@@ -646,16 +646,16 @@ function laoke_render_shortcode_content($content, $text, $isMarkdown = true, arr
         return laoke_shortcode_fragment_token($fragments, laoke_render_shortcode_button($labelHtml, $url, (string) ($attributes['color'] ?? '')), false);
     }, $working);
 
-    $working = preg_replace_callback('/\[colour\b([^\]]*)\](.*?)\[\/colour\]/isu', function ($matches) use ($content, $isMarkdown, &$fragments) {
+    $working = preg_replace_callback('/\[(?:colour|color)\b([^\]]*)\](.*?)\[\/(?:colour|color)\]/isu', function ($matches) use ($content, $isMarkdown, &$fragments) {
         $attributes = laoke_shortcode_attrs((string) $matches[1]);
         $html = laoke_render_shortcode_color_text(
             laoke_render_shortcode_inline_fragment($content, (string) $matches[2], $isMarkdown),
-            (string) ($attributes['type'] ?? '')
+            (string) ($attributes['color'] ?? ($attributes['type'] ?? ''))
         );
         return laoke_shortcode_fragment_token($fragments, $html, false);
     }, $working);
 
-    $working = preg_replace_callback('/\[bkc\](.*?)\[\/bkc\]/isu', function ($matches) use ($content, $isMarkdown, &$fragments) {
+    $working = preg_replace_callback('/\[(?:bkc|mks)\](.*?)\[\/(?:bkc|mks)\]/isu', function ($matches) use ($content, $isMarkdown, &$fragments) {
         $html = laoke_render_shortcode_mask_text(laoke_render_shortcode_inline_fragment($content, (string) $matches[1], $isMarkdown));
         return laoke_shortcode_fragment_token($fragments, $html, false);
     }, $working);

@@ -3,7 +3,27 @@
         return;
     }
 
-    let loading = false;
+    let activeController = null;
+    let navigationId = 0;
+    window.history.scrollRestoration = "manual";
+
+    function decodeHash(hash) {
+        const value = String(hash || "").replace(/^#/, "");
+        try {
+            return decodeURIComponent(value);
+        } catch (error) {
+            return value;
+        }
+    }
+
+    function saveScrollPosition() {
+        const state = window.history.state || {};
+        window.history.replaceState(Object.assign({}, state, {
+            url: state.url || window.location.href,
+            scrollX: window.scrollX,
+            scrollY: window.scrollY
+        }), "", window.location.href);
+    }
 
     function normalizeNavHref(href) {
         if (!href) {
@@ -86,17 +106,22 @@
         return true;
     }
 
-    async function navigate(url, push) {
-        if (loading) {
-            return;
+    async function navigate(url, push, restorePosition) {
+        if (push) {
+            saveScrollPosition();
         }
+        if (activeController) {
+            activeController.abort();
+        }
+        const controller = new AbortController();
+        const currentNavigationId = ++navigationId;
+        activeController = controller;
 
         const currentRoot = document.querySelector("#ajax-root");
         if (window.LaoKe && typeof window.LaoKe.beforePageSwap === "function") {
             window.LaoKe.beforePageSwap();
         }
 
-        loading = true;
         document.documentElement.classList.add("is-loading");
         if (currentRoot) {
             currentRoot.classList.remove("is-ready");
@@ -105,9 +130,18 @@
         try {
             const response = await fetch(url, {
                 headers: { "X-Requested-With": "XMLHttpRequest" },
-                credentials: "same-origin"
+                credentials: "same-origin",
+                signal: controller.signal
             });
+            const contentType = response.headers.get("content-type") || "";
+            if (!contentType.includes("text/html")) {
+                window.location.href = url;
+                return;
+            }
             const html = await response.text();
+            if (currentNavigationId !== navigationId) {
+                return;
+            }
             const doc = new DOMParser().parseFromString(html, "text/html");
             const nextRoot = doc.querySelector("#ajax-root");
 
@@ -142,14 +176,34 @@
                 if (typeof window.LaoKe.hydrateConfig === "function") {
                     window.LaoKe.hydrateConfig(currentRoot);
                 }
+                if (typeof window.LaoKe.runEmbeddedScripts === "function") {
+                    window.LaoKe.runEmbeddedScripts(currentRoot);
+                }
                 window.LaoKe.initPage(document);
             }
-            window.scrollTo(0, 0);
+            const target = new URL(url, window.location.href);
+            const hashTarget = target.hash ? document.getElementById(decodeHash(target.hash)) : null;
+            if (restorePosition && Number.isFinite(restorePosition.y)) {
+                window.scrollTo(Number(restorePosition.x) || 0, restorePosition.y);
+            } else {
+                window.scrollTo(0, hashTarget ? hashTarget.getBoundingClientRect().top + window.scrollY - 24 : 0);
+            }
+            const mainContent = document.getElementById("main-content");
+            const focusTarget = hashTarget || mainContent;
+            if (focusTarget) {
+                focusTarget.setAttribute("tabindex", "-1");
+                focusTarget.focus({ preventScroll: true });
+            }
         } catch (error) {
+            if (error && error.name === "AbortError") {
+                return;
+            }
             window.location.href = url;
         } finally {
-            loading = false;
-            document.documentElement.classList.remove("is-loading");
+            if (currentNavigationId === navigationId) {
+                activeController = null;
+                document.documentElement.classList.remove("is-loading");
+            }
         }
     }
 
@@ -176,8 +230,15 @@
 
     window.addEventListener("popstate", function (event) {
         const url = event.state && event.state.url ? event.state.url : window.location.href;
-        navigate(url, false);
+        navigate(url, false, {
+            x: event.state && Number(event.state.scrollX),
+            y: event.state && Number(event.state.scrollY)
+        });
     });
 
-    window.history.replaceState({ url: window.location.href }, "", window.location.href);
+    window.history.replaceState({
+        url: window.location.href,
+        scrollX: window.scrollX,
+        scrollY: window.scrollY
+    }, "", window.location.href);
 })();

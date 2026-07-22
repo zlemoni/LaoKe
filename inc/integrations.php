@@ -372,11 +372,16 @@ function laoke_frontend_barrage_config($archive)
 function laoke_frontend_runtime_config($archive)
 {
     $font = laoke_frontend_font_config();
+    $requestUrl = is_object($archive) && isset($archive->request)
+        ? $archive->request->getRequestUrl()
+        : '';
 
     return [
         'ajax' => laoke_feature_enabled('ajax'),
         'progress' => laoke_feature_enabled('progress'),
         'lazyload' => laoke_feature_enabled('lazyload'),
+        'codeTheme' => laoke_code_theme_config()['key'],
+        'actionToken' => \Widget\Security::alloc()->getToken($requestUrl),
         'metingEndpoint' => trim((string) laoke_option('metingEndpoint', 'https://api.injahow.cn/meting/')) ?: 'https://api.injahow.cn/meting/',
         'barrage' => laoke_frontend_barrage_config($archive),
         'fonts' => [
@@ -501,47 +506,6 @@ function laoke_add_integrated_theme_options($form)
     );
     $form->addInput($codeTheme);
 
-    $fontEnabled = new \Typecho\Widget\Helper\Form\Element\Radio(
-        'fontEnabled',
-        $toggleOptions,
-        '1',
-        _t('前台字体系统'),
-        _t('通过主题预设或自定义样式链接切换前台字体。')
-    );
-    $form->addInput($fontEnabled);
-
-    $fontPresetOptions = [];
-    foreach (laoke_frontend_font_presets() as $key => $preset) {
-        $fontPresetOptions[$key] = $preset['label'];
-    }
-    $fontPresetOptions['custom'] = _t('自定义字体');
-
-    $fontPreset = new \Typecho\Widget\Helper\Form\Element\Select(
-        'fontPreset',
-        $fontPresetOptions,
-        'default',
-        _t('字体预设'),
-        _t('选择主题内置字体组合，或切换到自定义字体。')
-    );
-    $form->addInput($fontPreset);
-
-    $fontCustomUrl = new \Typecho\Widget\Helper\Form\Element\Text(
-        'fontCustomUrl',
-        null,
-        null,
-        _t('自定义字体样式链接'),
-        _t('例如字体服务返回的 CSS 链接，仅在"自定义字体"模式下生效。')
-    );
-    $form->addInput($fontCustomUrl);
-
-    $fontCustomFamily = new \Typecho\Widget\Helper\Form\Element\Text(
-        'fontCustomFamily',
-        null,
-        null,
-        _t('自定义字体名称'),
-        _t('例如 LXGW WenKai、HarmonyOS Sans。')
-    );
-    $form->addInput($fontCustomFamily);
     return;
 
     $adminThemeEnabled = new \Typecho\Widget\Helper\Form\Element\Radio(

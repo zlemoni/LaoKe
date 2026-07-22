@@ -548,6 +548,14 @@ function themeInit($archive)
 
     if ($archive->request->isPost()) {
         $action = trim((string) $archive->request->get('laoke_action'));
+        if (in_array($action, ['unlock_album', 'moment_like'], true)) {
+            $requestUrl = $archive->request->getRequestUrl();
+            $expectedToken = \Widget\Security::alloc()->getToken($requestUrl);
+            $providedToken = trim((string) $archive->request->get('laoke_token'));
+            if ($providedToken === '' || !laoke_hash_equals($expectedToken, $providedToken)) {
+                laoke_throw_json($archive, ['ok' => false, 'message' => '请求令牌无效，请刷新页面后重试。'], 403);
+            }
+        }
         if ($action === 'unlock_album') {
             laoke_handle_album_unlock($archive);
         }
@@ -576,6 +584,8 @@ function themeInit($archive)
 
 \Typecho\Plugin::factory('Widget_Feedback')->comment_1000 = 'laoke_filter_comment_submission';
 \Typecho\Plugin::factory('Widget_Feedback')->finishComment = 'laoke_after_comment_submission';
+\Typecho\Plugin::factory('Widget_Abstract_Contents')->contentEx = 'laoke_filter_protected_feed_content';
+\Typecho\Plugin::factory('Widget_Abstract_Comments')->contentEx = 'laoke_filter_private_feed_comment';
 \Typecho\Plugin::factory('admin/editor-js.php')->markdownEditor = ['LaoKe_Admin_Editor', 'mountShortcodeToolbar'];
 \Typecho\Plugin::factory('admin/common.php')->footer = ['LaoKe_Admin_Hooks', 'injectAdminFooter'];
 
@@ -757,6 +767,41 @@ function laoke_strip_text($html)
     return trim((string) $text);
 }
 
+function laoke_is_feed_request()
+{
+    $path = (string) \Typecho\Request::getInstance()->getPathInfo();
+    return preg_match('#(?:^|/)feed(?:/|$)#i', $path) === 1;
+}
+
+function laoke_filter_protected_feed_content($html, $content)
+{
+    if (!laoke_is_feed_request() || !is_object($content)) {
+        return $html;
+    }
+
+    $raw = (string) ($content->text ?? '');
+    if (preg_match('/\[(?:login|hide)\b/i', $raw)) {
+        return '<p>此内容包含受访问控制保护的正文，请打开原文查看。</p>';
+    }
+
+    if (preg_match('/\[album\b[^\]]*\bpassword\s*=\s*(?:"[^"]+"|\'[^\']+\'|[^\s\]]+)/i', $raw)) {
+        return '<p>此内容包含受密码保护的相册，请打开原文查看。</p>';
+    }
+
+    return $html;
+}
+
+function laoke_filter_private_feed_comment($html, $comment)
+{
+    if (!laoke_is_feed_request() || !is_object($comment)) {
+        return $html;
+    }
+
+    return laoke_comment_extract_secret_text((string) ($comment->text ?? '')) !== null
+        ? '<p>这是一条私密评论。</p>'
+        : $html;
+}
+
 function laoke_capture_content($archive)
 {
     ob_start();
@@ -773,6 +818,7 @@ function laoke_capture_excerpt($archive)
 
 function laoke_transform_image_html($html, $src, $index)
 {
+    $src = html_entity_decode((string) $src, ENT_QUOTES | ENT_HTML5, 'UTF-8');
     $clean = preg_replace('/\s(?:loading|decoding|fetchpriority|srcset|sizes|data-src|data-srcset)="[^"]*"/i', '', $html);
     $clean = preg_replace("/\s(?:loading|decoding|fetchpriority|srcset|sizes|data-src|data-srcset)='[^']*'/i", '', $clean);
 
@@ -1344,6 +1390,8 @@ function laoke_ensure_views_column()
     try {
         if (strpos($adapter, 'sqlite') !== false) {
             $db->query('ALTER TABLE `' . $prefix . 'contents` ADD COLUMN views INTEGER DEFAULT 0', Typecho_Db::WRITE);
+        } elseif (strpos($adapter, 'pgsql') !== false || strpos($adapter, 'postgres') !== false) {
+            $db->query('ALTER TABLE "' . $prefix . 'contents" ADD COLUMN views INTEGER DEFAULT 0', Typecho_Db::WRITE);
         } else {
             $db->query('ALTER TABLE `' . $prefix . 'contents` ADD `views` INT(10) DEFAULT 0', Typecho_Db::WRITE);
         }
@@ -1363,10 +1411,19 @@ function laoke_track_views($archive)
     $tracked[$cid] = true;
     laoke_ensure_views_column();
 
-    $db = Typecho_Db::get();
-    $row = $db->fetchRow($db->select('views')->from('table.contents')->where('cid = ?', $cid)->limit(1));
-    $views = isset($row['views']) ? (int) $row['views'] : 0;
-    $db->query($db->update('table.contents')->rows(['views' => $views + 1])->where('cid = ?', $cid), Typecho_Db::WRITE);
+    try {
+        $db = Typecho_Db::get();
+        $prefix = $db->getPrefix();
+        $adapter = strtolower($db->getAdapterName());
+        $quote = (strpos($adapter, 'pgsql') !== false || strpos($adapter, 'postgres') !== false) ? '"' : '`';
+        $db->query(
+            'UPDATE ' . $quote . $prefix . 'contents' . $quote .
+            ' SET ' . $quote . 'views' . $quote . ' = COALESCE(' . $quote . 'views' . $quote . ', 0) + 1' .
+            ' WHERE ' . $quote . 'cid' . $quote . ' = ' . $cid,
+            Typecho_Db::WRITE
+        );
+    } catch (Exception $e) {
+    }
 }
 
 function laoke_get_views($archive)
@@ -1376,10 +1433,14 @@ function laoke_get_views($archive)
         return 0;
     }
 
-    laoke_ensure_views_column();
-    $db = Typecho_Db::get();
-    $row = $db->fetchRow($db->select('views')->from('table.contents')->where('cid = ?', $cid)->limit(1));
-    return isset($row['views']) ? (int) $row['views'] : 0;
+    try {
+        laoke_ensure_views_column();
+        $db = Typecho_Db::get();
+        $row = $db->fetchRow($db->select('views')->from('table.contents')->where('cid = ?', $cid)->limit(1));
+        return isset($row['views']) ? (int) $row['views'] : 0;
+    } catch (Exception $e) {
+        return 0;
+    }
 }
 
 function laoke_get_views_map(array $cids)
@@ -1403,13 +1464,17 @@ function laoke_get_views_map(array $cids)
     }
 
     if (!empty($missing)) {
-        laoke_ensure_views_column();
-        $db = Typecho_Db::get();
-        $rows = $db->fetchAll(
-            $db->select('cid', 'views')
-                ->from('table.contents')
-                ->where('cid IN ?', $missing)
-        );
+        try {
+            laoke_ensure_views_column();
+            $db = Typecho_Db::get();
+            $rows = $db->fetchAll(
+                $db->select('cid', 'views')
+                    ->from('table.contents')
+                    ->where('cid IN ?', $missing)
+            );
+        } catch (Exception $e) {
+            $rows = [];
+        }
 
         $fetched = [];
         foreach ($rows as $row) {
@@ -1599,6 +1664,12 @@ function laoke_is_sqlite_adapter()
     return strpos(strtolower($db->getAdapterName()), 'sqlite') !== false;
 }
 
+function laoke_is_pgsql_adapter()
+{
+    $adapter = strtolower(Typecho_Db::get()->getAdapterName());
+    return strpos($adapter, 'pgsql') !== false || strpos($adapter, 'postgres') !== false;
+}
+
 function laoke_ensure_comment_likes_column()
 {
     static $checked = false;
@@ -1621,6 +1692,8 @@ function laoke_ensure_comment_likes_column()
     try {
         if (laoke_is_sqlite_adapter()) {
             $db->query('ALTER TABLE `' . $prefix . 'comments` ADD COLUMN likes INTEGER DEFAULT 0', Typecho_Db::WRITE);
+        } elseif (laoke_is_pgsql_adapter()) {
+            $db->query('ALTER TABLE "' . $prefix . 'comments" ADD COLUMN likes INTEGER DEFAULT 0', Typecho_Db::WRITE);
         } else {
             $db->query('ALTER TABLE `' . $prefix . 'comments` ADD `likes` INT(10) DEFAULT 0', Typecho_Db::WRITE);
         }
@@ -1661,6 +1734,21 @@ function laoke_ensure_time_machine_like_table()
                 'CREATE INDEX IF NOT EXISTS `' . $table . '_coid` ON `' . $table . '` (`coid`)',
                 Typecho_Db::WRITE
             );
+        } elseif (laoke_is_pgsql_adapter()) {
+            $db->query(
+                'CREATE TABLE IF NOT EXISTS "' . $table . '" (' .
+                '"id" BIGSERIAL PRIMARY KEY,' .
+                '"coid" BIGINT NOT NULL,' .
+                '"token" VARCHAR(64) NOT NULL,' .
+                '"created" BIGINT NOT NULL DEFAULT 0,' .
+                'UNIQUE("coid", "token")' .
+                ')',
+                Typecho_Db::WRITE
+            );
+            $db->query(
+                'CREATE INDEX IF NOT EXISTS "' . $table . '_coid" ON "' . $table . '" ("coid")',
+                Typecho_Db::WRITE
+            );
         } else {
             $db->query(
                 'CREATE TABLE IF NOT EXISTS `' . $table . '` (' .
@@ -1688,7 +1776,7 @@ function laoke_ensure_time_machine_like_storage()
 function laoke_time_machine_like_token()
 {
     $token = trim((string) \Typecho\Cookie::get('__laoke_moment_like', ''));
-    if ($token !== '') {
+    if (preg_match('/^[a-f0-9]{32}$/', $token)) {
         return $token;
     }
 
@@ -1886,9 +1974,16 @@ function laoke_handle_time_machine_like($archive)
                     Typecho_Db::WRITE
                 );
             } catch (Exception $e) {
+                laoke_throw_json($archive, ['ok' => false, 'message' => '点赞保存失败，请稍后重试。'], 500);
             }
         }
-        $liked = true;
+        $liked = !empty($db->fetchRow(
+            $db->select('id')
+                ->from($table)
+                ->where('coid = ?', $coid)
+                ->where('token = ?', $token)
+                ->limit(1)
+        ));
     } else {
         if (!empty($exists)) {
             $db->query(
@@ -2150,18 +2245,7 @@ function laoke_comment_can_view_secret($comments, $archive = null)
         return true;
     }
 
-    $viewerMail = laoke_comment_viewer_mail($archive);
-    if ($viewerMail === '') {
-        return false;
-    }
-
-    $authorMail = strtolower(trim((string) ($comments->mail ?? '')));
-    if ($authorMail !== '' && laoke_hash_equals($authorMail, $viewerMail)) {
-        return true;
-    }
-
-    $parentMail = laoke_comment_parent_mail($comments);
-    return $parentMail !== '' && laoke_hash_equals($parentMail, $viewerMail);
+    return false;
 }
 
 function laoke_comment_private_placeholder_html()
@@ -2719,7 +2803,7 @@ function laoke_render_json_ld($archive)
         'url' => Helper::options()->siteUrl
     ];
 
-    echo '<script type="application/ld+json">' . json_encode($site, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . '</script>';
+    echo '<script type="application/ld+json">' . json_encode($site, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) . '</script>';
 
     if ($archive->is('post')) {
         $data = [
@@ -2735,6 +2819,6 @@ function laoke_render_json_ld($archive)
             ],
             'description' => laoke_excerpt($archive, 120)
         ];
-        echo '<script type="application/ld+json">' . json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . '</script>';
+        echo '<script type="application/ld+json">' . json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) . '</script>';
     }
 }

@@ -46,3 +46,14 @@
     border-radius: 4px;
     margin-top: 10px;
 }
+
+@media (prefers-reduced-motion: reduce) {
+    .laoke-admin-code-theme-btn,
+    #wmd-preview {
+        transition: none;
+    }
+
+    .laoke-admin-code-theme-btn:hover {
+        transform: none;
+    }
+}

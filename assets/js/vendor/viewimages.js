@@ -7,6 +7,8 @@
         list: [],
         index: 0,
         scale: 1,
+        previousFocus: null,
+        previousOverflow: "",
 
         ensure() {
             if (this.overlay) {
@@ -15,6 +17,9 @@
 
             const overlay = document.createElement("div");
             overlay.className = "viewimages-overlay";
+            overlay.setAttribute("role", "dialog");
+            overlay.setAttribute("aria-modal", "true");
+            overlay.setAttribute("aria-label", "图片预览");
             overlay.innerHTML = [
                 '<div class="viewimages-toolbar">',
                 '<button class="viewimages-btn" data-action="zoom-out" type="button">缩小</button>',
@@ -63,13 +68,31 @@
                     return;
                 }
                 if (event.key === "Escape") {
+                    event.preventDefault();
                     this.close();
                 }
                 if (event.key === "ArrowLeft") {
+                    event.preventDefault();
                     this.prev();
                 }
                 if (event.key === "ArrowRight") {
+                    event.preventDefault();
                     this.next();
+                }
+                if (event.key === "Tab") {
+                    const focusable = Array.from(this.overlay.querySelectorAll("button:not([disabled])"));
+                    if (!focusable.length) {
+                        return;
+                    }
+                    const first = focusable[0];
+                    const last = focusable[focusable.length - 1];
+                    if (event.shiftKey && document.activeElement === first) {
+                        event.preventDefault();
+                        last.focus();
+                    } else if (!event.shiftKey && document.activeElement === last) {
+                        event.preventDefault();
+                        first.focus();
+                    }
                 }
             });
         },
@@ -87,28 +110,55 @@
                         return;
                     }
                     img.dataset.viewimagesBound = "true";
+                    if (!img.hasAttribute("tabindex")) {
+                        img.tabIndex = 0;
+                    }
+                    img.setAttribute("role", "button");
+                    img.setAttribute("aria-label", (img.alt ? img.alt + "，" : "") + "打开图片预览");
                     img.addEventListener("click", (event) => {
                         event.preventDefault();
                         const list = Array.from(scope.querySelectorAll('img:not([data-viewimages-ignore="true"])'));
                         const index = list.indexOf(img);
                         this.open(list, index);
                     });
+                    img.addEventListener("keydown", (event) => {
+                        if (event.key !== "Enter" && event.key !== " ") {
+                            return;
+                        }
+                        event.preventDefault();
+                        const list = Array.from(scope.querySelectorAll('img:not([data-viewimages-ignore="true"])'));
+                        this.open(list, list.indexOf(img));
+                    });
                 });
             });
         },
 
         open(list, index) {
+            if (!Array.isArray(list) || !list.length || index < 0 || index >= list.length) {
+                return;
+            }
             this.list = list;
             this.index = index;
             this.scale = 1;
+            this.previousFocus = document.activeElement;
+            this.previousOverflow = document.body.style.overflow;
             this.render();
             this.overlay.classList.add("is-open");
             document.body.style.overflow = "hidden";
+            this.overlay.querySelector('[data-action="close"]').focus();
         },
 
         close() {
+            if (!this.overlay) {
+                return;
+            }
             this.overlay.classList.remove("is-open");
-            document.body.style.overflow = "";
+            document.body.style.overflow = this.previousOverflow;
+            this.list = [];
+            if (this.previousFocus && this.previousFocus.isConnected) {
+                this.previousFocus.focus();
+            }
+            this.previousFocus = null;
         },
 
         render() {
@@ -123,18 +173,27 @@
         },
 
         next() {
+            if (!this.list.length) {
+                return;
+            }
             this.index = (this.index + 1) % this.list.length;
             this.scale = 1;
             this.render();
         },
 
         prev() {
+            if (!this.list.length) {
+                return;
+            }
             this.index = (this.index - 1 + this.list.length) % this.list.length;
             this.scale = 1;
             this.render();
         },
 
         zoom(delta) {
+            if (!this.list.length) {
+                return;
+            }
             this.scale = Math.min(3, Math.max(0.6, this.scale + delta));
             this.image.style.transform = "scale(" + this.scale + ")";
         }

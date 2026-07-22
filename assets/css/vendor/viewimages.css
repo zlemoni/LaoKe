@@ -17,7 +17,7 @@
     position: relative;
     max-width: min(92vw, 1200px);
     max-height: 88vh;
-    overflow: hidden;
+    overflow: auto;
 }
 
 .viewimages-stage img {

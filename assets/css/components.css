@@ -10,6 +10,7 @@
     font-size: 26px;
     line-height: 1.45;
     margin-bottom: 8px;
+    letter-spacing: 0.02em;
 }
 
 .page-intro p {
@@ -37,7 +38,7 @@
 .archive-summary,
 .moment-item__meta {
     color: var(--muted);
-    font-size: 11px;
+    font-size: 12px;
     line-height: 22px;
     margin-top: 0;
     margin-bottom: 12px;
@@ -54,7 +55,7 @@
 .meta-item {
     display: inline-flex;
     align-items: center;
-    font-size: 11px;
+    font-size: 12px;
     line-height: 1;
     letter-spacing: 0.2px;
     white-space: nowrap;
@@ -81,7 +82,8 @@
 }
 
 .stream-divider {
-    margin: 0 0 24px;
+    margin: 4px 0 28px;
+    background: var(--line-soft);
 }
 
 .entry {
@@ -119,7 +121,8 @@
 
 .post-content blockquote {
     background: var(--code-bg);
-    padding: 10px 16px;
+    padding: 12px 18px;
+    border-radius: 0 10px 10px 0;
 }
 
 .post-toc {
@@ -131,7 +134,10 @@
 }
 
 .post-toc__inner {
-    padding: 8px 0 14px;
+    padding: 12px 14px 14px;
+    border: 1px solid var(--line-soft);
+    border-radius: 10px;
+    background: var(--code-bg);
 }
 
 .post-toc__title {
@@ -215,7 +221,7 @@
     border-radius: 999px;
     border: 1px solid var(--line-soft);
     background: var(--code-bg);
-    box-shadow: none;
+    box-shadow: var(--shadow-soft);
     color: var(--title);
     text-decoration: none;
     flex-direction: row;
@@ -480,13 +486,13 @@
 }
 
 .moment-feedback.is-success .moment-feedback__pill {
-    color: #2c7a4b;
-    background: rgba(44, 122, 75, 0.08);
+    color: var(--success);
+    background: var(--success-bg);
 }
 
 .moment-feedback.is-error .moment-feedback__pill {
-    color: #b94a48;
-    background: rgba(185, 74, 72, 0.08);
+    color: var(--danger);
+    background: var(--danger-bg);
 }
 
 .comment-list,
@@ -788,7 +794,8 @@
     width: 100%;
     margin: 30px 0 0;
     padding: 15px 25px;
-    border-radius: 10px;
+    border: 1px solid var(--line-soft);
+    border-radius: 14px;
     background: var(--container-bg);
     box-shadow: var(--shadow);
 }
@@ -810,7 +817,7 @@
     border-bottom: 1px solid var(--line-soft);
     color: var(--text);
     background: transparent;
-    padding: 4px 0;
+    padding: 7px 2px;
     outline: none;
 }
 
@@ -821,8 +828,9 @@
 .comment-form textarea.form-control {
     margin: 3px 0 10px;
     height: 150px;
-    resize: none;
+    resize: vertical;
     border-bottom: 0;
+    line-height: 1.9;
 }
 
 .comment-form--moment {
@@ -1226,12 +1234,19 @@
     bottom: 0;
     white-space: nowrap;
     cursor: pointer;
-    border: none;
+    border: 1px solid var(--line-soft);
     padding: 7px 10px;
     color: var(--title);
     background-color: var(--container-bg);
     box-shadow: var(--shadow);
-    border-radius: 3px;
+    border-radius: 10px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+#misubmit:hover,
+#misubmit:focus-visible {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-hover);
 }
 
 .comment-cancel {
@@ -1243,6 +1258,7 @@
     margin: 0;
     padding-right: 90px;
     color: var(--muted);
+    min-height: 26px;
 }
 
 .pager-comments {
@@ -1650,13 +1666,13 @@
 }
 
 .link-item__latency.is-fast {
-    color: #2c7a4b;
-    background: rgba(44, 122, 75, 0.08);
+    color: var(--success);
+    background: var(--success-bg);
 }
 
 .link-item__latency.is-slow {
-    color: #b94a48;
-    background: rgba(185, 74, 72, 0.08);
+    color: var(--danger);
+    background: var(--danger-bg);
 }
 
 .link-item__latency.is-checking,
@@ -1759,7 +1775,7 @@
 }
 
 .shortcode-callout.is-danger {
-    background: rgba(185, 74, 72, 0.08);
+    background: var(--danger-bg);
 }
 
 .shortcode-callout.is-info {
@@ -1767,7 +1783,7 @@
 }
 
 .shortcode-callout.is-success {
-    background: rgba(44, 122, 75, 0.08);
+    background: var(--success-bg);
 }
 
 .shortcode-collapse,
@@ -1969,7 +1985,8 @@
     transition: color 0.2s ease, background-color 0.2s ease;
 }
 
-.shortcode-mask-text:hover {
+.shortcode-mask-text:hover,
+.shortcode-mask-text:focus-visible {
     background: var(--code-bg);
     color: var(--text);
 }
@@ -2149,12 +2166,14 @@
     padding: 24px 0;
 }
 
-@media (min-width: 1200px) {
+@media (min-width: 1280px) {
     .post-toc.is-visible {
         position: fixed;
         top: 170px;
-        left: calc(50% + 420px);
+        right: max(20px, calc(50% - 620px));
         width: 190px;
+        max-height: calc(100vh - 200px);
+        overflow-y: auto;
     }
 }
 
@@ -2182,7 +2201,7 @@
         display: none;
     }
 
-    .page-intro-home {
+    .page-intro-home p {
         display: none;
     }
 
@@ -2233,7 +2252,7 @@
     .entry-tags,
     .archive-summary,
     .moment-item__meta {
-        font-size: 11px;
+        font-size: 12px;
         line-height: 20px;
         margin-bottom: 10px;
     }

@@ -65,7 +65,7 @@ LaoKe 是一个基于 Typecho 的纯文字、单栏、极简博客主题。
 ```
 
 ```
-[album]
+[album key="travel-2026" title="旅行相册"]
 ![图片描述](图片地址)
 [/album]
 ```
@@ -78,15 +78,15 @@ LaoKe 是一个基于 Typecho 的纯文字、单栏、极简博客主题。
 ```
 
 ```
-[button color="#1890ff"]按钮文字[/button]
+[button url="https://example.com" color="#1890ff"]按钮文字[/button]
 ```
 
 ```
-[video src="视频地址"][/video]
+[video src="视频地址"]
 ```
 
 ```
-[bilibili bv="BV号"][/bilibili]
+[bilibili bv="BV号"]
 ```
 
 ```
@@ -106,7 +106,7 @@ LaoKe 是一个基于 Typecho 的纯文字、单栏、极简博客主题。
 ```
 
 ```
-[mks]隐藏内容[/mks]
+[bkc]隐藏内容[/bkc]
 ```
 
 ```
@@ -245,4 +245,3 @@ LaoKe/
 - 评论增强功能（弹幕、点赞、私密评论）
 - 丰富的短代码支持
 - 相册、友链、归档、时光机页面模板
-

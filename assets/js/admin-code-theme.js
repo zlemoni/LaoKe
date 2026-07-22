@@ -45,11 +45,12 @@
     }
 
     function updatePreview(theme) {
+        var t = THEMES[theme] || THEMES['default'];
         applyThemeCSS(theme);
         var preview = document.querySelector('#wmd-preview');
         if (preview) {
-            preview.style.backgroundColor = THEMES[theme].bg;
-            preview.style.color = THEMES[theme].text;
+            preview.style.backgroundColor = t.bg;
+            preview.style.color = t.text;
         }
     }
 
@@ -70,7 +71,8 @@
         btnContainer.style.cssText = 'display: flex; flex-wrap: wrap; gap: 8px;';
         container.appendChild(btnContainer);
 
-        currentTheme = select.value;
+        currentTheme = THEMES[select.value] ? select.value : 'default';
+        select.value = currentTheme;
 
         Object.keys(THEMES).forEach(function(key) {
             var theme = THEMES[key];
@@ -81,13 +83,18 @@
             btn.style.cssText = 'padding: 8px 14px; border: 2px solid ' + (key === currentTheme ? '#0969da' : 'transparent') + '; border-radius: 6px; background: ' + theme.bg + '; color: ' + theme.text + '; cursor: pointer; font-size: 12px; transition: all 0.2s ease;';
             btn.textContent = theme.name;
             btn.title = '点击应用 ' + theme.name;
+            btn.setAttribute('aria-pressed', key === currentTheme ? 'true' : 'false');
 
             btn.addEventListener('click', function() {
                 select.value = key;
                 btnContainer.querySelectorAll('button').forEach(function(b) {
                     b.style.borderColor = 'transparent';
+                    b.classList.remove('is-active');
+                    b.setAttribute('aria-pressed', 'false');
                 });
                 btn.style.borderColor = '#0969da';
+                btn.classList.add('is-active');
+                btn.setAttribute('aria-pressed', 'true');
                 currentTheme = key;
                 updatePreview(key);
             });
@@ -102,6 +109,8 @@
             btnContainer.querySelectorAll('button').forEach(function(btn) {
                 var key = btn.dataset.theme;
                 btn.style.borderColor = (key === currentTheme) ? '#0969da' : 'transparent';
+                btn.classList.toggle('is-active', key === currentTheme);
+                btn.setAttribute('aria-pressed', key === currentTheme ? 'true' : 'false');
             });
             updatePreview(currentTheme);
         });

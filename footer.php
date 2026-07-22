@@ -1,6 +1,6 @@
 <?php if (!defined('__TYPECHO_ROOT_DIR__')) exit; ?>
         </main>
-        <script id="laoke-page-config" type="application/json"><?php echo json_encode(laoke_frontend_runtime_config($this), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?></script>
+        <script id="laoke-page-config" type="application/json"><?php echo json_encode(laoke_frontend_runtime_config($this), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP); ?></script>
     </div>
     <footer class="site-footer">
         <p><?php echo htmlspecialchars(laoke_option('footerText', '写字的人，和安静的页面。'), ENT_QUOTES, 'UTF-8'); ?></p>
@@ -9,7 +9,7 @@
             <?php if (laoke_option('beian')): ?>
                 <span class="meta-item"><?php echo htmlspecialchars(laoke_option('beian'), ENT_QUOTES, 'UTF-8'); ?></span>
             <?php endif; ?>
-            <span class="meta-item"><a href="https://github.com/zlemoni/LaoKe" target="_blank" rel="noopener noreferrer">Theme：LaoKe</span>
+            <span class="meta-item"><a href="https://github.com/zlemoni/LaoKe" target="_blank" rel="noopener noreferrer">Theme：LaoKe</a></span>
         </p>
     </footer>
 </div>
@@ -50,23 +50,24 @@
     </svg>
     <span class="sr-only">切换主题</span>
 </button>
-<div class="laoke-code-theme-panel" id="laoke-code-theme-panel" aria-label="代码高亮主题切换">
-    <button class="laoke-code-theme-btn" type="button" data-code-theme="default" title="默认深色">
+<button class="code-theme-toggle" id="laoke-code-theme-toggle" type="button" aria-controls="laoke-code-theme-panel" aria-expanded="false" aria-label="选择代码高亮主题" title="选择代码高亮主题">{ }</button>
+<div class="laoke-code-theme-panel" id="laoke-code-theme-panel" role="group" aria-label="代码高亮主题切换" aria-hidden="true">
+    <button class="laoke-code-theme-btn" type="button" data-code-theme="default" title="默认深色" aria-label="默认深色">
         <span class="laoke-code-theme-preview laoke-code-theme-preview--dark"></span>
     </button>
-    <button class="laoke-code-theme-btn" type="button" data-code-theme="tomorrow-night" title="Tomorrow Night">
+    <button class="laoke-code-theme-btn" type="button" data-code-theme="tomorrow-night" title="Tomorrow Night" aria-label="Tomorrow Night">
         <span class="laoke-code-theme-preview laoke-code-theme-preview--dark"></span>
     </button>
-    <button class="laoke-code-theme-btn" type="button" data-code-theme="okaidia" title="Okaidia">
+    <button class="laoke-code-theme-btn" type="button" data-code-theme="okaidia" title="Okaidia" aria-label="Okaidia">
         <span class="laoke-code-theme-preview laoke-code-theme-preview--dark"></span>
     </button>
-    <button class="laoke-code-theme-btn" type="button" data-code-theme="dracula" title="Dracula">
+    <button class="laoke-code-theme-btn" type="button" data-code-theme="dracula" title="Dracula" aria-label="Dracula">
         <span class="laoke-code-theme-preview laoke-code-theme-preview--dark"></span>
     </button>
-    <button class="laoke-code-theme-btn" type="button" data-code-theme="solarized-light" title="Solarized Light">
+    <button class="laoke-code-theme-btn" type="button" data-code-theme="solarized-light" title="Solarized Light" aria-label="Solarized Light">
         <span class="laoke-code-theme-preview laoke-code-theme-preview--light"></span>
     </button>
-    <button class="laoke-code-theme-btn" type="button" data-code-theme="github" title="GitHub Light">
+    <button class="laoke-code-theme-btn" type="button" data-code-theme="github" title="GitHub Light" aria-label="GitHub Light">
         <span class="laoke-code-theme-preview laoke-code-theme-preview--light"></span>
     </button>
 </div>
@@ -86,6 +87,7 @@
     }
 })();
 </script>
+<script>window.Prism = window.Prism || {}; window.Prism.manual = true;</script>
 <script defer src="<?php echo laoke_theme_url('assets/js/vendor/prism.js'); ?>"></script>
 <script defer src="<?php echo laoke_theme_url('assets/js/vendor/viewimages.js'); ?>"></script>
 <script defer src="<?php echo laoke_theme_url('assets/js/vendor/aplayer.min.js'); ?>"></script>

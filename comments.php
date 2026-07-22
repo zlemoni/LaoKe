@@ -23,6 +23,7 @@ function threadedComments($comments, $options)
     $commentId = (int) $comments->coid;
     $liked = false;
     $likes = 0;
+    $commentAuthor = htmlspecialchars((string) $comments->author, ENT_QUOTES, 'UTF-8');
 
     if ($isTimeMachine && $isTopLevel && (string) $comments->status === 'approved') {
         $likes = laoke_get_comment_likes($commentId);
@@ -33,10 +34,10 @@ function threadedComments($comments, $options)
 <li id="comment-<?php echo $commentId; ?>" class="comment-item comment-level-<?php echo (int) $comments->levels + 1; ?><?php if ($isTimeMachine && $isTopLevel): ?> moment-comment-item<?php endif; ?>">
     <article class="comment-body<?php if ($isTimeMachine && $isTopLevel): ?> moment-comment-body<?php endif; ?>">
         <div class="comment-avatar<?php if ($isTimeMachine && $isTopLevel): ?> moment-comment-avatar<?php endif; ?>">
-            <img src="<?php echo laoke_comment_avatar($comments->mail, 64); ?>" alt="<?php echo htmlspecialchars((string) $comments->author(false), ENT_QUOTES, 'UTF-8'); ?>" loading="lazy" decoding="async">
+            <img src="<?php echo laoke_comment_avatar($comments->mail, 64); ?>" alt="<?php echo $commentAuthor; ?>" loading="lazy" decoding="async">
         </div>
         <header class="comment-meta<?php if ($isTimeMachine && $isTopLevel): ?> moment-comment-meta<?php endif; ?>">
-            <cite><?php echo htmlspecialchars((string) $comments->author(false), ENT_QUOTES, 'UTF-8'); ?></cite>
+            <cite><?php echo $commentAuthor; ?></cite>
             <?php if ($isTimeMachine && $isTopLevel && (string) $comments->status === 'approved'): ?>
                 <div class="moment-comment-meta__aside">
                     <time datetime="<?php echo date('c', $comments->created); ?>"><?php echo laoke_relative_time($comments->created); ?></time>
@@ -221,7 +222,9 @@ function threadedComments($comments, $options)
             </form>
         </section>
         <?php if (!$isTimeMachine): ?>
-            <?php \Utils\Helper::threadedCommentsScript(); ?>
+            <div data-laoke-rehydrate-scripts>
+                <?php \Utils\Helper::threadedCommentsScript(); ?>
+            </div>
         <?php endif; ?>
     <?php elseif ($isTimeMachine && $this->user->hasLogin()): ?>
         <p class="empty-state">当前账号没有发布权限。请确认这张时光机页面的作者归属，或使用具备编辑权限的账号登录。</p>

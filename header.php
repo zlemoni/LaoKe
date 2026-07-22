@@ -6,6 +6,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="renderer" content="webkit">
     <meta name="color-scheme" content="light dark">
+    <script>
+    (function () {
+        document.documentElement.classList.add('js');
+        try {
+            var stored = window.localStorage.getItem('laoke-theme');
+            var theme = stored === 'light' || stored === 'dark'
+                ? stored
+                : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', theme);
+        } catch (error) {}
+    })();
+    </script>
     <meta name="description" content="<?php echo htmlspecialchars(laoke_meta_description($this), ENT_QUOTES, 'UTF-8'); ?>">
     <link rel="canonical" href="<?php $this->permalink(); ?>">
     <title><?php echo htmlspecialchars(laoke_page_title($this), ENT_QUOTES, 'UTF-8'); ?></title>
@@ -14,7 +26,7 @@
     <link rel="preload" href="<?php echo laoke_theme_url('assets/css/layout.css'); ?>" as="style">
     <link rel="preload" href="<?php echo laoke_theme_url('assets/css/components.css'); ?>" as="style">
     <link rel="preload" href="<?php echo laoke_theme_url('assets/css/pages.css'); ?>" as="style">
-    <link rel="preload" href="<?php echo laoke_theme_url('assets/js/main.js'); ?>" as="script" crossorigin="anonymous">
+    <link rel="preload" href="<?php echo laoke_theme_url('assets/js/main.js'); ?>" as="script">
     <link rel="dns-prefetch" href="https://fonts.googleapis.com">
     <link rel="dns-prefetch" href="https://fonts.gstatic.com" crossorigin="anonymous">
     <link rel="stylesheet" href="<?php echo laoke_theme_url('assets/css/base.css'); ?>">
@@ -37,12 +49,12 @@
             <nav id="nav" class="site-nav" aria-label="主导航">
                 <ul>
                     <li>
-                        <a<?php if ($this->is('index')): ?> class="selected"<?php endif; ?> href="<?php $this->options->siteUrl(); ?>">首页</a>
+                        <a<?php if ($this->is('index')): ?> class="selected" aria-current="page"<?php endif; ?> href="<?php $this->options->siteUrl(); ?>">首页</a>
                     </li>
                     <?php \Widget\Contents\Page\Rows::alloc()->to($pages); ?>
                     <?php while ($pages->next()): ?>
                         <li>
-                            <a<?php if ($this->is('page', $pages->slug)): ?> class="selected"<?php endif; ?> href="<?php $pages->permalink(); ?>"><?php $pages->title(); ?></a>
+                            <a<?php if ($this->is('page', $pages->slug)): ?> class="selected" aria-current="page"<?php endif; ?> href="<?php $pages->permalink(); ?>"><?php $pages->title(); ?></a>
                         </li>
                     <?php endwhile; ?>
                     <li>

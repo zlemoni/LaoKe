@@ -50,7 +50,7 @@ img.is-loaded {
 
 .album-inline-lock {
     padding: 22px 24px;
-    border: 0;
+    border: 1px solid var(--line-soft);
     border-radius: 14px;
     background: var(--container-bg);
     box-shadow: var(--shadow);
@@ -109,7 +109,7 @@ img.is-loaded {
     min-width: 0;
     border: 1px solid var(--line);
     border-radius: 999px;
-    background: var(--bg);
+    background: var(--container-bg);
     color: var(--title);
     padding: 10px 14px;
 }
@@ -127,8 +127,7 @@ img.is-loaded {
 .album-inline-lock__submit:hover,
 .album-inline-lock__submit:focus-visible {
     background: var(--title);
-    color: var(--bg);
-    outline: none;
+    color: var(--container-bg);
 }
 
 .album-inline-lock__feedback {
@@ -156,7 +155,7 @@ img.is-loaded {
     display: block;
     width: 100%;
     padding: 0;
-    border: 0;
+    border: 1px solid var(--line-soft);
     border-radius: 14px;
     background: var(--container-bg);
     box-shadow: var(--shadow);
@@ -170,7 +169,7 @@ img.is-loaded {
 .album-card:focus-visible {
     opacity: 1;
     transform: translateY(-2px);
-    outline: none;
+    box-shadow: var(--shadow-hover);
 }
 
 .album-card__cover {
@@ -226,7 +225,7 @@ img.is-loaded {
     gap: 10px;
     margin-top: 12px;
     color: var(--muted);
-    font-size: 11px;
+    font-size: 12px;
     line-height: 1.8;
     letter-spacing: 0.4px;
 }
@@ -248,8 +247,8 @@ img.is-loaded {
 }
 
 .album-card.is-unlocked .album-card__badge {
-    color: #2c7a4b;
-    background: rgba(44, 122, 75, 0.08);
+    color: var(--success);
+    background: var(--success-bg);
 }
 
 .albums-detail-view[hidden],
@@ -362,7 +361,9 @@ img.is-loaded {
     align-items: center;
     justify-content: center;
     padding: 20px;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.46);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
 }
 
 .album-unlock-modal__dialog {
@@ -371,6 +372,7 @@ img.is-loaded {
     border-radius: 14px;
     background: var(--container-bg);
     box-shadow: var(--shadow);
+    border: 1px solid var(--line-soft);
 }
 
 .album-unlock-modal__close {
@@ -382,6 +384,11 @@ img.is-loaded {
 .album-unlock-modal__title,
 .album-unlock-form__feedback {
     margin: 0;
+}
+
+html body :is(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--title) !important;
+    outline-offset: 3px;
 }
 
 .album-unlock-modal__eyebrow {
