@@ -8,15 +8,16 @@ $hasTags = !empty($this->tags);
 
 <article class="entry entry-post" itemscope itemtype="https://schema.org/BlogPosting">
     <header class="entry-header">
-        <h1 class="entry-title center" itemprop="headline"><?php $this->title(); ?></h1>
-        <p class="entry-meta center meta-list">
+        <p class="entry-kicker">Writing / <?php $this->date('Y.m.d'); ?></p>
+        <h1 class="entry-title" itemprop="headline"><?php $this->title(); ?></h1>
+        <p class="entry-meta meta-list">
             <time class="meta-item" datetime="<?php $this->date('c'); ?>" itemprop="datePublished"><?php echo laoke_relative_time($this->created); ?></time>
             <span class="meta-item"><?php $this->category(', '); ?></span>
             <span class="meta-item">阅读 <?php echo laoke_get_views($this); ?></span>
             <span class="meta-item">字数 <?php echo laoke_word_count($this); ?></span>
         </p>
         <?php if ($hasTags): ?>
-            <p class="entry-tags center"><?php laoke_render_tags($this, 6); ?></p>
+            <p class="entry-tags"><?php laoke_render_tags($this, 6); ?></p>
         <?php endif; ?>
     </header>
 
@@ -27,6 +28,11 @@ $hasTags = !empty($this->tags);
 
         <div class="post-content" itemprop="articleBody">
             <?php echo $contentHtml; ?>
+        </div>
+    <?php else: ?>
+        <div class="empty-state">
+            <h2>暂无正文</h2>
+            <p>这篇文章还没有发布正文内容。</p>
         </div>
     <?php endif; ?>
 

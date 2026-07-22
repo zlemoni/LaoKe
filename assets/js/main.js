@@ -13,6 +13,7 @@
         shortcodeMp3Observer: null,
         pageObservers: [],
         tocObserver: null,
+        tocFooterObserver: null,
         audioPlayers: new Set(),
         commentController: null,
         codeThemeRequestId: 0,
@@ -346,6 +347,13 @@
 
         if (!nav || !navToggle) {
             return;
+        }
+
+        const selectedLink = nav.querySelector("a[aria-current='page'], a.selected");
+        if (selectedLink && window.matchMedia("(max-width: 900px)").matches) {
+            window.requestAnimationFrame(function () {
+                selectedLink.scrollIntoView({ block: "nearest", inline: "center" });
+            });
         }
 
         if (state.headerBound) {
@@ -746,6 +754,10 @@
             state.tocObserver.disconnect();
             state.tocObserver = null;
         }
+        if (state.tocFooterObserver) {
+            state.tocFooterObserver.disconnect();
+            state.tocFooterObserver = null;
+        }
         const toc = document.getElementById("post-toc");
         const content = document.querySelector(".post-content");
         if (!toc || !content) {
@@ -788,7 +800,18 @@
         toc.innerHTML = '<div class="post-toc__inner"><p class="post-toc__title">目录</p></div>';
         toc.querySelector(".post-toc__inner").appendChild(list);
         toc.classList.add("is-visible");
+        toc.classList.remove("is-footer-overlap");
         initSmoothAnchors(toc);
+
+        const footer = document.querySelector(".site-footer");
+        if (footer && "IntersectionObserver" in window) {
+            state.tocFooterObserver = new IntersectionObserver(function (entries) {
+                toc.classList.toggle("is-footer-overlap", entries.some(function (entry) {
+                    return entry.isIntersecting;
+                }));
+            }, { threshold: 0 });
+            state.tocFooterObserver.observe(footer);
+        }
 
         const links = Array.from(toc.querySelectorAll("a"));
         if (!("IntersectionObserver" in window)) {

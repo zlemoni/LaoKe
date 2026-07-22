@@ -10,10 +10,18 @@
 
 <?php
 $linkGroups = laoke_links_grouped();
+$linkTotal = 0;
+foreach ($linkGroups as $links) {
+    $linkTotal += count($links);
+}
 ?>
 
-<section class="page-intro">
-    <h1 class="center"><?php $this->title(); ?></h1>
+<section class="page-intro page-intro--feature page-intro--links">
+    <div class="page-intro__body">
+        <h1><?php $this->title(); ?></h1>
+        <p>互联网上仍在认真表达的人与站点。</p>
+    </div>
+    <p class="page-intro__aside"><span><?php echo number_format($linkTotal); ?></span> 个站点</p>
 </section>
 
 <?php if (empty($linkGroups)): ?>

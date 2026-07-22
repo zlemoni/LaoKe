@@ -2,28 +2,36 @@
 <?php $this->need('header.php'); ?>
 
 <section class="page-intro page-intro-home">
-    <h1><?php $this->options->title(); ?></h1>
-    <p><?php $this->options->description(); ?></p>
+    <p class="page-intro__eyebrow">Latest writing</p>
+    <h1>文章与近况</h1>
+    <p>一些持续发生的记录，按时间缓慢排列。</p>
 </section>
 
 <?php if ($this->have()): ?>
+    <div class="stream-list">
     <?php while ($this->next()): ?>
         <article class="stream-item" itemscope itemtype="https://schema.org/BlogPosting">
-            <h2 class="stream-title center" itemprop="headline">
-                <a href="<?php $this->permalink(); ?>" itemprop="url"><?php $this->title(); ?></a>
-            </h2>
-            <p class="stream-meta stream-meta--capsules center meta-list">
-                <time class="meta-item" datetime="<?php $this->date('c'); ?>" itemprop="datePublished"><?php echo laoke_relative_time($this->created); ?></time>
-                <span class="meta-item">评论 <?php $this->commentsNum('0', '1', '%d'); ?></span>
-                <span class="meta-item">阅读 <?php echo laoke_get_views($this); ?></span>
-                <?php if (!empty($this->categories)): ?>
-                    <span class="meta-item"><?php $this->category(', '); ?></span>
-                <?php endif; ?>
-            </p>
-            <p class="stream-excerpt" itemprop="description"><?php echo htmlspecialchars(laoke_excerpt($this, 150), ENT_QUOTES, 'UTF-8'); ?></p>
+            <time class="stream-date" datetime="<?php $this->date('c'); ?>" itemprop="datePublished">
+                <span class="stream-date__day"><?php $this->date('d'); ?></span>
+                <span class="stream-date__year-month"><?php $this->date('Y.m'); ?></span>
+            </time>
+            <div class="stream-item__body">
+                <h2 class="stream-title" itemprop="headline">
+                    <a href="<?php $this->permalink(); ?>" itemprop="url"><?php $this->title(); ?></a>
+                </h2>
+                <p class="stream-excerpt" itemprop="description"><?php echo htmlspecialchars(laoke_excerpt($this, 150), ENT_QUOTES, 'UTF-8'); ?></p>
+                <p class="stream-meta meta-list">
+                    <span class="meta-item"><?php echo laoke_relative_time($this->created); ?></span>
+                    <span class="meta-item">评论 <?php $this->commentsNum('0', '1', '%d'); ?></span>
+                    <span class="meta-item">阅读 <?php echo laoke_get_views($this); ?></span>
+                    <?php if (!empty($this->categories)): ?>
+                        <span class="meta-item"><?php $this->category(', '); ?></span>
+                    <?php endif; ?>
+                </p>
+            </div>
         </article>
-        <hr class="stream-divider">
     <?php endwhile; ?>
+    </div>
 
     <ul class="pager">
         <li class="previous"><?php $this->pageLink('上一页', 'prev'); ?></li>

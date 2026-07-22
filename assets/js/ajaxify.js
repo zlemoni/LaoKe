@@ -69,6 +69,10 @@
             });
 
             if (nextSelected.length) {
+                const selected = currentNav.querySelector("a[aria-current='page']");
+                if (selected && window.matchMedia("(max-width: 900px)").matches) {
+                    selected.scrollIntoView({ block: "nearest", inline: "center" });
+                }
                 return;
             }
         }
@@ -81,6 +85,9 @@
         if (activeLink) {
             activeLink.classList.add("selected");
             activeLink.setAttribute("aria-current", "page");
+            if (window.matchMedia("(max-width: 900px)").matches) {
+                activeLink.scrollIntoView({ block: "nearest", inline: "center" });
+            }
         }
     }
 

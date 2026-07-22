@@ -74,7 +74,7 @@ function threadedComments($comments, $options)
 <section id="comments" class="comments-area<?php if ($isTimeMachine): ?> is-time-machine<?php endif; ?>"<?php if ($isTimeMachine): ?> data-moment-like-endpoint="<?php echo htmlspecialchars($this->permalink, ENT_QUOTES, 'UTF-8'); ?>"<?php endif; ?>>
     <?php $this->comments()->to($comments); ?>
     <header class="comments-header<?php if (!$isTimeMachine): ?> center<?php else: ?> comments-header--timeline<?php endif; ?>">
-        <h2><?php echo $isTimeMachine ? '时光机' : '评论'; ?></h2>
+        <h2><?php echo $isTimeMachine ? '动态记录' : '评论'; ?></h2>
         <p>
             <?php if ($isTimeMachine): ?>
                 <?php if ($momentCount <= 0): ?>
@@ -159,7 +159,7 @@ function threadedComments($comments, $options)
                                 </div>
                             <?php endif; ?>
                             <div class="comment-options">
-                                <label class="comment-private-toggle" title="仅评论相关方可见">
+                                <label class="comment-private-toggle" title="仅站点编辑者与当前浏览器可见">
                                     <input class="comment-private-toggle__input" type="checkbox" name="secret" value="1"<?php if ($rememberSecret): ?> checked<?php endif; ?>>
                                     <span class="comment-private-toggle__indicator" aria-hidden="true"></span>
                                     <span class="comment-private-toggle__text">私密评论</span>
@@ -226,6 +226,8 @@ function threadedComments($comments, $options)
                 <?php \Utils\Helper::threadedCommentsScript(); ?>
             </div>
         <?php endif; ?>
+    <?php elseif ($isTimeMachine && !$this->allow('comment')): ?>
+        <p class="empty-state">动态发布已关闭。</p>
     <?php elseif ($isTimeMachine && $this->user->hasLogin()): ?>
         <p class="empty-state">当前账号没有发布权限。请确认这张时光机页面的作者归属，或使用具备编辑权限的账号登录。</p>
     <?php elseif (!$isTimeMachine && !$this->allow('comment')): ?>

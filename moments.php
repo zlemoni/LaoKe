@@ -9,17 +9,18 @@
 <?php $this->need('header.php'); ?>
 
 <?php $introHtml = trim((string) laoke_content_html($this)); ?>
-<section class="page-intro page-intro--moments">
-    <h1 class="center"><?php $this->title(); ?></h1>
-</section>
-
-<?php if ($introHtml !== ''): ?>
-    <section class="moment-intro">
-        <div class="post-content">
-            <?php echo $introHtml; ?>
+<section class="page-intro page-intro--feature page-intro--moments">
+    <div class="page-intro__body">
+        <h1><?php $this->title(); ?></h1>
+        <div class="page-intro__description post-content">
+            <?php if ($introHtml !== ''): ?>
+                <?php echo $introHtml; ?>
+            <?php else: ?>
+                <p>比文章短一些，比即时消息慢一些。</p>
+            <?php endif; ?>
         </div>
-    </section>
-<?php endif; ?>
+    </div>
+</section>
 
 <?php $this->need('comments.php'); ?>
 

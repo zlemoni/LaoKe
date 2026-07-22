@@ -2,6 +2,7 @@
 <?php $this->need('header.php'); ?>
 
 <section class="page-intro">
+    <p class="page-intro__eyebrow">Browse</p>
     <h1><?php $this->archiveTitle([
         'category' => _t('%s'),
         'search' => _t('搜索：%s'),
@@ -14,18 +15,25 @@
 </section>
 
 <?php if ($this->have()): ?>
+    <div class="stream-list">
     <?php while ($this->next()): ?>
         <article class="stream-item">
-            <h2 class="stream-title center"><a href="<?php $this->permalink(); ?>"><?php $this->title(); ?></a></h2>
-            <p class="stream-meta center meta-list">
-                <time class="meta-item" datetime="<?php $this->date('c'); ?>"><?php echo laoke_relative_time($this->created); ?></time>
-                <span class="meta-item">阅读 <?php echo laoke_get_views($this); ?></span>
-            </p>
-            <p class="stream-excerpt"><?php echo htmlspecialchars(laoke_excerpt($this, 150), ENT_QUOTES, 'UTF-8'); ?></p>
-            <div class="stream-tags"><?php laoke_render_categories($this, 3); ?></div>
+            <time class="stream-date" datetime="<?php $this->date('c'); ?>">
+                <span class="stream-date__day"><?php $this->date('d'); ?></span>
+                <span class="stream-date__year-month"><?php $this->date('Y.m'); ?></span>
+            </time>
+            <div class="stream-item__body">
+                <h2 class="stream-title"><a href="<?php $this->permalink(); ?>"><?php $this->title(); ?></a></h2>
+                <p class="stream-excerpt"><?php echo htmlspecialchars(laoke_excerpt($this, 150), ENT_QUOTES, 'UTF-8'); ?></p>
+                <p class="stream-meta meta-list">
+                    <span class="meta-item"><?php echo laoke_relative_time($this->created); ?></span>
+                    <span class="meta-item">阅读 <?php echo laoke_get_views($this); ?></span>
+                    <span class="meta-item stream-tags"><?php laoke_render_categories($this, 3); ?></span>
+                </p>
+            </div>
         </article>
-        <hr class="stream-divider">
     <?php endwhile; ?>
+    </div>
 
     <ul class="pager">
         <li class="previous"><?php $this->pageLink('上一页', 'prev'); ?></li>

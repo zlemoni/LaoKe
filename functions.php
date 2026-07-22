@@ -92,11 +92,11 @@ function laoke_theme_backups()
     return [];
 }
 
-function laoke_theme_save_backups(array $backups)
+function laoke_theme_save_backups(array $backups, $theme = null)
 {
     $json = json_encode(array_values($backups), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     $db = \Typecho\Db::get();
-    $key = laoke_theme_backup_storage_key();
+    $key = laoke_theme_backup_storage_key($theme);
     $row = $db->fetchRow(
         $db->select('name')
             ->from('table.options')
@@ -179,20 +179,20 @@ function laoke_theme_create_backup_from_settings(array $settings)
     laoke_theme_save_backups(array_slice($backups, 0, 20));
 }
 
-function laoke_theme_save_settings(array $settings, ?array $backups = null)
+function laoke_theme_save_settings(array $settings, ?array $backups = null, $theme = null)
 {
     if ($backups === null) {
         $backups = laoke_theme_embedded_backups($settings);
     }
 
     if (is_array($backups) && count($backups) > 0) {
-        laoke_theme_save_backups($backups);
+        laoke_theme_save_backups($backups, $theme);
     }
 
     $persisted = laoke_theme_settings_clean($settings);
     $json = json_encode($persisted, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     $db = \Typecho\Db::get();
-    $key = laoke_theme_option_storage_key();
+    $key = laoke_theme_option_storage_key($theme);
     $row = $db->fetchRow(
         $db->select('name')
             ->from('table.options')
@@ -233,6 +233,7 @@ function laoke_theme_find_backup($backupId)
 function themeConfigHandle($settings, $isInit)
 {
     $settings = is_array($settings) ? $settings : [];
+    $targetTheme = $isInit ? basename(__DIR__) : null;
     $action = trim((string) ($settings['settingsBackupAction'] ?? ''));
     if ($action === '' && !empty($settings['settingsBackupCreate'])) {
         $action = 'create_backup';
@@ -257,7 +258,7 @@ function themeConfigHandle($settings, $isInit)
         return true;
     }
 
-    laoke_theme_save_settings($settings);
+    laoke_theme_save_settings($settings, null, $targetTheme);
     return true;
 }
 
@@ -542,10 +543,6 @@ function themeConfig($form)
 
 function themeInit($archive)
 {
-    if (laoke_is_time_machine_content($archive)) {
-        $archive->allowComment = 1;
-    }
-
     if ($archive->request->isPost()) {
         $action = trim((string) $archive->request->get('laoke_action'));
         if (in_array($action, ['unlock_album', 'moment_like'], true)) {
@@ -563,15 +560,6 @@ function themeInit($archive)
             laoke_handle_time_machine_like($archive);
         }
     }
-
-    \Utils\Helper::options()->commentsThreaded = true;
-    \Utils\Helper::options()->commentsPageBreak = true;
-    \Utils\Helper::options()->commentsPageSize = 10;
-    \Utils\Helper::options()->commentsPageDisplay = 'first';
-    \Utils\Helper::options()->commentsOrder = 'DESC';
-    \Utils\Helper::options()->commentsMaxNestingLevels = 3;
-    \Utils\Helper::options()->commentsMarkdown = true;
-    \Utils\Helper::options()->commentsHTMLTagAllowed = '<a href=""> <code> <pre> <img src="" alt="" title=""> <strong> <em> <blockquote>';
 
     if ($archive->is('index') || $archive->is('archive') || $archive->is('category') || $archive->is('tag') || $archive->is('search') || $archive->is('author')) {
         $archive->parameter->pageSize = 10;
@@ -998,7 +986,7 @@ function laoke_can_publish_time_machine($content)
         return false;
     }
 
-    return laoke_current_user_can_edit_content($content);
+    return $content->allow('comment') && laoke_current_user_can_edit_content($content);
 }
 
 function laoke_body_class($archive)
@@ -1322,6 +1310,81 @@ function laoke_secret_comment_cookie_has($coid)
     return isset($entries[$coid]);
 }
 
+function laoke_hide_access_cookie_name()
+{
+    return '__laoke_hide_access';
+}
+
+function laoke_hide_access_entries()
+{
+    $cookie = trim((string) \Typecho\Cookie::get(laoke_hide_access_cookie_name(), ''));
+    if ($cookie === '' || strpos($cookie, '.') === false) {
+        return [];
+    }
+
+    [$body, $signature] = explode('.', $cookie, 2);
+    if ($body === '' || !laoke_hash_equals(laoke_secret_comment_cookie_signature('hide|' . $body), $signature)) {
+        return [];
+    }
+
+    $entries = [];
+    foreach (laoke_secret_comment_cookie_decode($body) as $cid => $coid) {
+        $contentId = (int) $cid;
+        $commentId = (int) $coid;
+        if ($contentId > 0 && $commentId > 0) {
+            $entries[$contentId] = $commentId;
+        }
+    }
+    return $entries;
+}
+
+function laoke_mark_hide_access($cid, $coid)
+{
+    $cid = (int) $cid;
+    $coid = (int) $coid;
+    if ($cid <= 0 || $coid <= 0) {
+        return;
+    }
+
+    $entries = laoke_hide_access_entries();
+    $entries[$cid] = $coid;
+    $entries = array_slice($entries, -64, null, true);
+    $body = laoke_secret_comment_cookie_encode($entries);
+    if ($body === '') {
+        return;
+    }
+
+    \Typecho\Cookie::set(
+        laoke_hide_access_cookie_name(),
+        $body . '.' . laoke_secret_comment_cookie_signature('hide|' . $body),
+        time() + 31536000
+    );
+}
+
+function laoke_viewer_has_hide_access($cid)
+{
+    $cid = (int) $cid;
+    $entries = laoke_hide_access_entries();
+    if ($cid <= 0 || empty($entries[$cid])) {
+        return false;
+    }
+
+    try {
+        $db = Typecho_Db::get();
+        $row = $db->fetchRow(
+            $db->select('coid')
+                ->from('table.comments')
+                ->where('coid = ?', (int) $entries[$cid])
+                ->where('cid = ?', $cid)
+                ->where('status = ?', 'approved')
+                ->limit(1)
+        );
+        return !empty($row);
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
 function laoke_mark_secret_comment_author($coid)
 {
     $coid = (int) $coid;
@@ -1371,17 +1434,15 @@ function laoke_render_tags($archive, $limit = 6)
 
 function laoke_ensure_views_column()
 {
-    static $checked = false;
+    static $available = null;
 
-    if ($checked) {
-        return;
+    if ($available !== null) {
+        return $available;
     }
 
-    $checked = true;
     $db = Typecho_Db::get();
-    $row = $db->fetchRow($db->select()->from('table.contents')->limit(1));
-    if (is_array($row) && array_key_exists('views', $row)) {
-        return;
+    if (laoke_table_has_column('contents', 'views')) {
+        return $available = true;
     }
 
     $prefix = $db->getPrefix();
@@ -1396,7 +1457,10 @@ function laoke_ensure_views_column()
             $db->query('ALTER TABLE `' . $prefix . 'contents` ADD `views` INT(10) DEFAULT 0', Typecho_Db::WRITE);
         }
     } catch (Exception $e) {
+        return $available = false;
     }
+
+    return $available = laoke_table_has_column('contents', 'views');
 }
 
 function laoke_track_views($archive)
@@ -1409,7 +1473,9 @@ function laoke_track_views($archive)
     }
 
     $tracked[$cid] = true;
-    laoke_ensure_views_column();
+    if (!laoke_ensure_views_column()) {
+        return;
+    }
 
     try {
         $db = Typecho_Db::get();
@@ -1585,14 +1651,21 @@ function laoke_total_views()
         return $total;
     }
 
-    laoke_ensure_views_column();
-    $db = Typecho_Db::get();
-    $row = $db->fetchRow(
-        $db->select(['SUM(views)' => 'total'])
-            ->from('table.contents')
-            ->where('type = ?', 'post')
-            ->where('status = ?', 'publish')
-    );
+    if (!laoke_ensure_views_column()) {
+        return $total = 0;
+    }
+
+    try {
+        $db = Typecho_Db::get();
+        $row = $db->fetchRow(
+            $db->select(['SUM(views)' => 'total'])
+                ->from('table.contents')
+                ->where('type = ?', 'post')
+                ->where('status = ?', 'publish')
+        );
+    } catch (Exception $e) {
+        return $total = 0;
+    }
 
     $total = isset($row['total']) ? (int) $row['total'] : 0;
     return $total;
@@ -1670,21 +1743,48 @@ function laoke_is_pgsql_adapter()
     return strpos($adapter, 'pgsql') !== false || strpos($adapter, 'postgres') !== false;
 }
 
-function laoke_ensure_comment_likes_column()
+function laoke_table_has_column($table, $column)
 {
-    static $checked = false;
-
-    if ($checked) {
-        return;
+    $db = Typecho_Db::get();
+    $table = trim((string) $table);
+    $column = trim((string) $column);
+    if ($table === '' || $column === '') {
+        return false;
     }
 
-    $checked = true;
-    $db = Typecho_Db::get();
+    if (laoke_is_sqlite_adapter()) {
+        try {
+            $rows = $db->fetchAll('PRAGMA table_info(`' . $db->getPrefix() . $table . '`)');
+            foreach ($rows as $row) {
+                if ((string) ($row['name'] ?? '') === $column) {
+                    return true;
+                }
+            }
+        } catch (Exception $e) {
+        }
+        return false;
+    }
 
     try {
-        $db->fetchRow($db->select('likes')->from('table.comments')->limit(1));
-        return;
+        $db->fetchRow($db->select($column)->from('table.' . $table)->limit(1));
+        return true;
     } catch (Exception $e) {
+        return false;
+    }
+}
+
+function laoke_ensure_comment_likes_column()
+{
+    static $available = null;
+
+    if ($available !== null) {
+        return $available;
+    }
+
+    $db = Typecho_Db::get();
+
+    if (laoke_table_has_column('comments', 'likes')) {
+        return $available = true;
     }
 
     $prefix = $db->getPrefix();
@@ -1698,7 +1798,10 @@ function laoke_ensure_comment_likes_column()
             $db->query('ALTER TABLE `' . $prefix . 'comments` ADD `likes` INT(10) DEFAULT 0', Typecho_Db::WRITE);
         }
     } catch (Exception $e) {
+        return $available = false;
     }
+
+    return $available = laoke_table_has_column('comments', 'likes');
 }
 
 function laoke_time_machine_like_table()
@@ -1708,13 +1811,12 @@ function laoke_time_machine_like_table()
 
 function laoke_ensure_time_machine_like_table()
 {
-    static $checked = false;
+    static $available = null;
 
-    if ($checked) {
-        return;
+    if ($available !== null) {
+        return $available;
     }
 
-    $checked = true;
     $db = Typecho_Db::get();
     $table = laoke_time_machine_like_table();
 
@@ -1764,13 +1866,20 @@ function laoke_ensure_time_machine_like_table()
             );
         }
     } catch (Exception $e) {
+        return $available = false;
+    }
+
+    try {
+        $db->fetchRow($db->select('id')->from($table)->limit(1));
+        return $available = true;
+    } catch (Exception $e) {
+        return $available = false;
     }
 }
 
 function laoke_ensure_time_machine_like_storage()
 {
-    laoke_ensure_comment_likes_column();
-    laoke_ensure_time_machine_like_table();
+    return laoke_ensure_comment_likes_column() && laoke_ensure_time_machine_like_table();
 }
 
 function laoke_time_machine_like_token()
@@ -1799,7 +1908,9 @@ function laoke_time_machine_liked_map(array $coids)
         return [];
     }
 
-    laoke_ensure_time_machine_like_storage();
+    if (!laoke_ensure_time_machine_like_storage()) {
+        return array_fill_keys($coids, false);
+    }
     $token = laoke_time_machine_like_token();
     $missing = [];
     $result = [];
@@ -1814,12 +1925,16 @@ function laoke_time_machine_liked_map(array $coids)
 
     if (!empty($missing)) {
         $db = Typecho_Db::get();
-        $rows = $db->fetchAll(
-            $db->select('coid')
-                ->from(laoke_time_machine_like_table())
-                ->where('token = ?', $token)
-                ->where('coid IN ?', $missing)
-        );
+        try {
+            $rows = $db->fetchAll(
+                $db->select('coid')
+                    ->from(laoke_time_machine_like_table())
+                    ->where('token = ?', $token)
+                    ->where('coid IN ?', $missing)
+            );
+        } catch (Exception $e) {
+            $rows = [];
+        }
 
         $liked = [];
         foreach ($rows as $row) {
@@ -1848,14 +1963,21 @@ function laoke_get_comment_likes($coid)
         return $cache[$coid];
     }
 
-    laoke_ensure_comment_likes_column();
-    $db = Typecho_Db::get();
-    $row = $db->fetchRow(
-        $db->select('likes')
-            ->from('table.comments')
-            ->where('coid = ?', $coid)
-            ->limit(1)
-    );
+    if (!laoke_ensure_comment_likes_column()) {
+        return 0;
+    }
+
+    try {
+        $db = Typecho_Db::get();
+        $row = $db->fetchRow(
+            $db->select('likes')
+                ->from('table.comments')
+                ->where('coid = ?', $coid)
+                ->limit(1)
+        );
+    } catch (Exception $e) {
+        return 0;
+    }
 
     $cache[$coid] = isset($row['likes']) ? (int) $row['likes'] : 0;
     return $cache[$coid];
@@ -1868,7 +1990,9 @@ function laoke_sync_comment_likes($coid)
         return 0;
     }
 
-    laoke_ensure_time_machine_like_storage();
+    if (!laoke_ensure_time_machine_like_storage()) {
+        return 0;
+    }
     $db = Typecho_Db::get();
     $row = $db->fetchRow(
         $db->select(['COUNT(id)' => 'count'])
@@ -1950,7 +2074,9 @@ function laoke_handle_time_machine_like($archive)
         laoke_throw_json($archive, ['ok' => false, 'message' => '这条内容暂不支持点赞。'], 403);
     }
 
-    laoke_ensure_time_machine_like_storage();
+    if (!laoke_ensure_time_machine_like_storage()) {
+        laoke_throw_json($archive, ['ok' => false, 'message' => '点赞存储暂不可用。'], 503);
+    }
     $token = laoke_time_machine_like_token();
     $db = Typecho_Db::get();
     $table = laoke_time_machine_like_table();
@@ -2064,12 +2190,16 @@ function laoke_after_comment_submission($comment)
     }
 
     $coid = isset($comment->coid) ? (int) $comment->coid : 0;
+    $cid = isset($comment->cid) ? (int) $comment->cid : (is_object($content) ? (int) ($content->cid ?? 0) : 0);
     $text = isset($comment->text) ? (string) $comment->text : '';
-    if ($coid <= 0 || laoke_comment_extract_secret_text($text) === null) {
+    if ($coid <= 0) {
         return;
     }
 
-    laoke_mark_secret_comment_author($coid);
+    laoke_mark_hide_access($cid, $coid);
+    if (laoke_comment_extract_secret_text($text) !== null) {
+        laoke_mark_secret_comment_author($coid);
+    }
 }
 
 function laoke_owo_items()
@@ -2250,7 +2380,7 @@ function laoke_comment_can_view_secret($comments, $archive = null)
 
 function laoke_comment_private_placeholder_html()
 {
-    return '<div class="comment-private-placeholder"><p class="comment-private-placeholder__eyebrow">私密评论</p><p class="comment-private-placeholder__text">这条评论仅评论相关方可见。</p></div>';
+    return '<div class="comment-private-placeholder"><p class="comment-private-placeholder__eyebrow">私密评论</p><p class="comment-private-placeholder__text">这条评论仅站点编辑者与提交时使用的浏览器可见。</p></div>';
 }
 
 function laoke_comment_text_html($comments, $text)

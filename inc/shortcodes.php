@@ -316,8 +316,6 @@ function laoke_render_shortcode_access_notice($mode)
 
 function laoke_shortcode_viewer_has_approved_comment($content)
 {
-    static $cache = [];
-
     if (!is_object($content)) {
         return false;
     }
@@ -327,32 +325,7 @@ function laoke_shortcode_viewer_has_approved_comment($content)
         return false;
     }
 
-    $mail = '';
-    if (method_exists($content, 'remember')) {
-        $mail = trim((string) $content->remember('mail', true));
-    }
-
-    if ($mail === '') {
-        return false;
-    }
-
-    $cacheKey = $cid . '|' . strtolower($mail);
-    if (isset($cache[$cacheKey])) {
-        return $cache[$cacheKey];
-    }
-
-    $db = Typecho_Db::get();
-    $row = $db->fetchRow(
-        $db->select('coid')
-            ->from('table.comments')
-            ->where('cid = ?', $cid)
-            ->where('status = ?', 'approved')
-            ->where('mail = ?', $mail)
-            ->limit(1)
-    );
-
-    $cache[$cacheKey] = !empty($row);
-    return $cache[$cacheKey];
+    return function_exists('laoke_viewer_has_hide_access') && laoke_viewer_has_hide_access($cid);
 }
 
 function laoke_render_shortcode_video($src)

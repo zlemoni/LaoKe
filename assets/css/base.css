@@ -65,7 +65,12 @@ body {
 html, body {
     margin: 0;
     padding: 0;
+    width: 100%;
+    max-width: 100%;
     font-size: 100%;
+    overflow-x: hidden;
+    overflow-x: clip;
+    overscroll-behavior-x: none;
 }
 
 a {
@@ -84,7 +89,7 @@ select:focus-visible {
 }
 
 a:hover {
-    opacity: 0.5;
+    opacity: 0.68;
 }
 
 img {
@@ -119,8 +124,8 @@ td,
 input,
 textarea,
 button {
-    font-size: 13px;
-    line-height: 26px;
+    font-size: 14px;
+    line-height: 1.9;
     font-weight: 300;
     letter-spacing: 0.6px;
 }
@@ -195,14 +200,33 @@ table {
 }
 
 .post-content {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     overflow-wrap: anywhere;
+}
+
+.post-content img,
+.post-content video,
+.post-content audio,
+.post-content iframe,
+.post-content embed,
+.post-content object,
+.post-content pre,
+.post-content .code-toolbar {
+    max-width: 100%;
+}
+
+.post-content iframe,
+.post-content embed,
+.post-content object {
+    width: 100%;
 }
 
 .post-content table {
     display: block;
     max-width: 100%;
     overflow-x: auto;
-    white-space: nowrap;
     -webkit-overflow-scrolling: touch;
 }
 
@@ -212,6 +236,8 @@ td {
     height: 45px;
     border: 1px solid var(--line);
     text-align: left;
+    overflow-wrap: normal;
+    word-break: normal;
 }
 
 th {

@@ -1,9 +1,15 @@
 <?php if (!defined('__TYPECHO_ROOT_DIR__')) exit; ?>
+<?php
+$canonicalPath = method_exists($this->request, 'getRequestUrl') ? (string) $this->request->getRequestUrl() : '';
+$canonicalUrl = preg_match('#^https?://#i', $canonicalPath)
+    ? $canonicalPath
+    : rtrim((string) $this->options->siteUrl, '/') . '/' . ltrim($canonicalPath, '/');
+?>
 <!DOCTYPE html>
 <html lang="zh-CN" data-theme="auto">
 <head>
     <meta charset="<?php $this->options->charset(); ?>">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="renderer" content="webkit">
     <meta name="color-scheme" content="light dark">
     <script>
@@ -19,7 +25,7 @@
     })();
     </script>
     <meta name="description" content="<?php echo htmlspecialchars(laoke_meta_description($this), ENT_QUOTES, 'UTF-8'); ?>">
-    <link rel="canonical" href="<?php $this->permalink(); ?>">
+    <link rel="canonical" href="<?php echo htmlspecialchars($canonicalUrl, ENT_QUOTES, 'UTF-8'); ?>">
     <title><?php echo htmlspecialchars(laoke_page_title($this), ENT_QUOTES, 'UTF-8'); ?></title>
     <?php laoke_render_frontend_head_assets(); ?>
     <link rel="preload" href="<?php echo laoke_theme_url('assets/css/base.css'); ?>" as="style">
@@ -45,6 +51,10 @@
 <div class="container">
     <header class="site-header">
         <div class="header-wrap">
+            <a class="site-brand" href="<?php $this->options->siteUrl(); ?>" aria-label="<?php $this->options->title(); ?> 首页">
+                <span class="site-brand__name"><?php $this->options->title(); ?></span>
+                <span class="site-brand__description"><?php $this->options->description(); ?></span>
+            </a>
             <button id="nav-toggle" class="nav-toggle" type="button" aria-controls="nav" aria-expanded="false">菜单</button>
             <nav id="nav" class="site-nav" aria-label="主导航">
                 <ul>

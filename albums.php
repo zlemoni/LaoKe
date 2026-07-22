@@ -23,20 +23,19 @@
     $introHtml = trim((string) ($albumPage['introHtml'] ?? ''));
     $albums = is_array($albumPage['albums'] ?? null) ? $albumPage['albums'] : [];
     ?>
-    <section class="page-intro page-intro--albums">
-        <h1 class="center"><?php $this->title(); ?></h1>
-        <?php if (!empty($albums)): ?>
-            <p class="center">共 <?php echo number_format(count($albums)); ?> 个相册</p>
-        <?php endif; ?>
-    </section>
-
-    <?php if ($introHtml !== ''): ?>
-        <section class="album-intro">
-            <div class="post-content">
-                <?php echo $introHtml; ?>
+    <section class="page-intro page-intro--feature page-intro--albums">
+        <div class="page-intro__body">
+            <h1><?php $this->title(); ?></h1>
+            <div class="page-intro__description post-content">
+                <?php if ($introHtml !== ''): ?>
+                    <?php echo $introHtml; ?>
+                <?php else: ?>
+                    <p>收集旅途、日常与值得留存的画面。</p>
+                <?php endif; ?>
             </div>
-        </section>
-    <?php endif; ?>
+        </div>
+        <p class="page-intro__aside"><span><?php echo number_format(count($albums)); ?></span> 个影集</p>
+    </section>
 
     <section class="albums-page" data-album-page data-album-endpoint="<?php echo htmlspecialchars($this->permalink, ENT_QUOTES, 'UTF-8'); ?>" data-album-cid="<?php echo (int) $this->cid; ?>">
         <?php if (empty($albums)): ?>

@@ -43,8 +43,12 @@ if ($defaultOpenYear === '' && !empty($groups)) {
 }
 ?>
 
-<section class="page-intro">
-    <h1 class="center"><?php $this->title(); ?></h1>
+<section class="page-intro page-intro--feature page-intro--archive">
+    <div class="page-intro__body">
+        <h1><?php $this->title(); ?></h1>
+        <p>沿着年份回看写下的文字与站点留下的数字。</p>
+    </div>
+    <p class="page-intro__aside"><span><?php echo count($groups); ?></span> 个年份</p>
 </section>
 
 <section class="archive-stats archive-stats-grid">
@@ -67,9 +71,12 @@ if ($defaultOpenYear === '' && !empty($groups)) {
 </section>
 
 <section class="archive-timeline">
-    <header class="section-head center">
-        <h2>时间归档</h2>
-    </header>
+    <?php if (empty($groups)): ?>
+        <div class="empty-state">
+            <h2>暂无归档</h2>
+            <p>文章发布后会按年份显示在这里。</p>
+        </div>
+    <?php else: ?>
     <?php foreach ($groups as $year => $items): ?>
         <details class="archive-year"<?php if ((string) $year === (string) $defaultOpenYear): ?> open<?php endif; ?>>
             <summary class="archive-year__head">
@@ -105,6 +112,7 @@ if ($defaultOpenYear === '' && !empty($groups)) {
             </ol>
         </details>
     <?php endforeach; ?>
+    <?php endif; ?>
 </section>
 
 <?php $this->need('footer.php'); ?>
